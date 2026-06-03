@@ -1,0 +1,9 @@
+[project]
+name = "wolcup-lens"
+version = "0.1.0"
+description = "Player rating engine using PassRank-inspired passing network analysis."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
