@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { RatingBadge } from "@/components/RatingBadge";
-import { RatingExplanation } from "@/components/RatingExplanation";
+import { MatchLineups } from "@/components/MatchLineups";
 import { StatComparison } from "@/components/StatComparison";
 import { getTeam } from "@/data/mockData";
 import { footballDataProvider } from "@/lib/footballApi";
@@ -22,7 +22,6 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
   const home = getTeam(match.homeTeamId);
   const away = getTeam(match.awayTeamId);
   const ratings = calculateMatchRatings(match.playerStats);
-  const featuredRating = ratings[0];
 
   return (
     <div className="space-y-8">
@@ -68,29 +67,10 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
             <StatComparison homeStats={match.teamStats[home.id]} awayStats={match.teamStats[away.id]} />
           </section>
 
-          <section className="glass-card rounded-3xl p-5">
-            <h2 className="section-title mb-5">Lineups</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              {[home, away].map((team) => {
-                const lineup = match.lineups[team.id];
-                return (
-                  <div key={team.id} className="rounded-2xl border border-white/10 bg-ink/40 p-4">
-                    <h3 className="mb-3 text-lg font-black text-white">{team.flag} {team.name} <span className="text-sm text-slate-400">{lineup?.formation}</span></h3>
-                    {lineup ? lineup.starters.map((player) => (
-                      <div key={player.playerId} className="flex items-center justify-between border-t border-white/10 py-2 text-sm">
-                        <span className="text-slate-200">#{player.shirtNumber} {player.name}</span>
-                        <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-slate-300">{player.position}</span>
-                      </div>
-                    )) : <p className="text-sm text-slate-400">Lineup pending.</p>}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+          <MatchLineups home={home} away={away} lineups={match.lineups} ratings={ratings} />
         </div>
 
         <aside className="space-y-8">
-          {featuredRating && <RatingExplanation rating={featuredRating} />}
           <section className="glass-card rounded-3xl p-5">
             <h2 className="section-title mb-5">Player ratings</h2>
             <div className="space-y-3">
