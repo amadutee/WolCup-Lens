@@ -52,7 +52,7 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
               <div className="space-y-4">
                 {match.timeline.map((event) => (
                   <div key={`${event.minute}-${event.player}-${event.detail}`} className="flex gap-4 rounded-2xl border border-white/10 bg-ink/40 p-4">
-                    <span className="w-14 font-black text-pitch-100">{event.minute}{event.stoppage ? `+${event.stoppage}` : ""}'</span>
+                    <span className="w-14 font-black text-pitch-100">{event.minute}{event.stoppage ? `+${event.stoppage}` : ""}&apos;</span>
                     <div>
                       <p className="font-bold text-white">{event.player} · {event.type}</p>
                       <p className="text-sm text-slate-400">{event.detail}</p>
