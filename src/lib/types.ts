@@ -10,28 +10,83 @@ export type Team = {
   group: string;
 };
 
-export type PlayerStats = {
+export type Player = {
+  id: string;
+  name: string;
+  teamId: string;
+  position: Position;
+  shirtNumber?: number;
+};
+
+export type PlayerMatchStats = {
   playerId: string;
   matchId: string;
   teamId: string;
   playerName: string;
   position: Position;
-  minutesPlayed: number;
-  goals: number;
-  assists: number;
-  expectedGoals: number;
-  expectedAssists: number;
-  shotsOnTarget: number;
-  keyPasses: number;
-  passCompletion: number;
-  progressivePasses: number;
-  tackles: number;
-  interceptions: number;
-  clearances: number;
-  errorsLeadingToShots: number;
-  errorsLeadingToGoals: number;
-  yellowCards: number;
-  redCards: number;
+  minutesPlayed?: number;
+  goals?: number;
+  assists?: number;
+  expectedGoals?: number;
+  expectedAssists?: number;
+  shots?: number;
+  shotsOnTarget?: number;
+  keyPasses?: number;
+  passAccuracy?: number;
+  passCompletion?: number;
+  totalPasses?: number;
+  progressivePasses?: number;
+  tackles?: number;
+  interceptions?: number;
+  clearances?: number;
+  pressures?: number;
+  ballRecoveries?: number;
+  saves?: number;
+  penaltiesWon?: number;
+  penaltiesConceded?: number;
+  errorsLeadingToShots?: number;
+  errorsLeadingToGoals?: number;
+  yellowCards?: number;
+  redCards?: number;
+};
+
+export type PlayerStats = Required<
+  Pick<
+    PlayerMatchStats,
+    | "playerId"
+    | "matchId"
+    | "teamId"
+    | "playerName"
+    | "position"
+    | "minutesPlayed"
+    | "goals"
+    | "assists"
+    | "expectedGoals"
+    | "expectedAssists"
+    | "shotsOnTarget"
+    | "keyPasses"
+    | "passCompletion"
+    | "progressivePasses"
+    | "tackles"
+    | "interceptions"
+    | "clearances"
+    | "errorsLeadingToShots"
+    | "errorsLeadingToGoals"
+    | "yellowCards"
+    | "redCards"
+  >
+>;
+
+export type RatingBreakdown = {
+  attacking: number;
+  playmaking: number;
+  possession: number;
+  defensive: number;
+  goalkeeping: number;
+  disciplinePenalty: number;
+  networkInfluence?: number;
+  xgChain?: number;
+  details?: string[];
 };
 
 export type LineupPlayer = {
@@ -100,4 +155,9 @@ export type PlayerRating = {
   rating: number;
   baseRating: number;
   impacts: RatingImpact[];
+  breakdown?: RatingBreakdown;
 };
+
+export interface PlayerRatingProvider {
+  getMatchRatings(matchId: string): Promise<PlayerRating[]>;
+}

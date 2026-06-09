@@ -1,12 +1,14 @@
 import { RatingBadge } from "@/components/RatingBadge";
 import { getTeam } from "@/data/mockData";
 import { footballDataProvider } from "@/lib/footballApi";
-import { calculateMatchRatings } from "@/lib/rating";
+import { getRatingProvider } from "@/config/ratingProvider";
 import type { PlayerRating, Position } from "@/lib/types";
 
 export default async function RankingsPage() {
   const matches = await footballDataProvider.getMatches();
-  const allRatings = matches.flatMap((match) => calculateMatchRatings(match.playerStats));
+  const ratingProvider = getRatingProvider();
+  const ratingsByMatch = await Promise.all(matches.map((match) => ratingProvider.getMatchRatings(match.id)));
+  const allRatings = ratingsByMatch.flat();
   const teamRankings = buildTeamRankings(allRatings);
   const positionRankings = buildPositionRankings(allRatings);
 
@@ -15,7 +17,7 @@ export default async function RankingsPage() {
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur lg:p-10">
         <p className="mb-3 text-sm font-bold uppercase tracking-[0.3em] text-pitch-100">Rankings</p>
         <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">Top players, teams, and roles at a glance.</h1>
-        <p className="mt-4 max-w-2xl text-slate-300">Rankings are calculated from mock match player ratings today and can be swapped to provider-backed tournament aggregates later.</p>
+        <p className="mt-4 max-w-2xl text-slate-300">Rankings are calculated through the configured rating provider while keeping the same tournament view.</p>
       </section>
 
       <div className="grid gap-8 xl:grid-cols-3">
