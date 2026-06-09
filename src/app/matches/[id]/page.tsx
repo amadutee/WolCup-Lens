@@ -43,7 +43,7 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
         </div>
       </section>
 
-      <div className="grid gap-8 [--match-card-height:28rem] [--match-ratings-card-height:56rem] xl:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-8 [--match-card-height:28rem] [--match-ratings-card-height:58rem] xl:grid-cols-[1.2fr_0.8fr]">
         <section className="glass-card flex h-[var(--match-card-height)] min-h-0 flex-col overflow-hidden rounded-3xl p-5">
           <h2 className="section-title mb-5 shrink-0">Timeline</h2>
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
