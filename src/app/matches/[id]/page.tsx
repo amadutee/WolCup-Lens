@@ -43,28 +43,30 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
         </div>
       </section>
 
-      <div className="grid gap-8 xl:grid-cols-[1.2fr_0.8fr]">
-        <section className="glass-card rounded-3xl p-5">
-          <h2 className="section-title mb-5">Timeline</h2>
-          {match.timeline.length ? (
-            <div className="space-y-4">
-              {match.timeline.map((event) => (
-                <div key={`${event.minute}-${event.player}-${event.detail}`} className="flex gap-4 rounded-2xl border border-white/10 bg-ink/40 p-4">
-                  <span className="w-14 font-black text-pitch-100">{event.minute}{event.stoppage ? `+${event.stoppage}` : ""}&apos;</span>
-                  <div>
-                    <p className="font-bold text-white">{event.player} · {event.type}</p>
-                    <p className="text-sm text-slate-400">{event.detail}</p>
+      <div className="grid gap-8 [--match-card-height:28rem] [--match-ratings-card-height:58rem] xl:grid-cols-[1.2fr_0.8fr]">
+        <section className="glass-card flex h-[var(--match-card-height)] min-h-0 flex-col overflow-hidden rounded-3xl p-5">
+          <h2 className="section-title mb-5 shrink-0">Timeline</h2>
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            {match.timeline.length ? (
+              <div className="space-y-4">
+                {match.timeline.map((event) => (
+                  <div key={`${event.minute}-${event.player}-${event.detail}`} className="flex gap-4 rounded-2xl border border-white/10 bg-ink/40 p-4">
+                    <span className="w-14 font-black text-pitch-100">{event.minute}{event.stoppage ? `+${event.stoppage}` : ""}&apos;</span>
+                    <div>
+                      <p className="font-bold text-white">{event.player} · {event.type}</p>
+                      <p className="text-sm text-slate-400">{event.detail}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : <p className="text-slate-400">Timeline events will appear once the match starts.</p>}
+                ))}
+              </div>
+            ) : <p className="text-slate-400">Timeline events will appear once the match starts.</p>}
+          </div>
         </section>
 
         <aside className="min-h-0 xl:row-span-2">
-          <section className="glass-card flex h-full max-h-[42rem] min-h-0 flex-col overflow-hidden rounded-3xl p-5 xl:max-h-none">
+          <section className="glass-card flex h-[var(--match-ratings-card-height)] min-h-0 flex-col overflow-hidden rounded-3xl p-5">
             <h2 className="section-title mb-5 shrink-0">Player ratings</h2>
-            <div className="min-h-0 space-y-3 overflow-y-auto pr-1 xl:flex-1">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
               {ratings.map((rating) => (
                 <div key={rating.playerId} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-ink/40 p-3">
                   <RatingBadge rating={rating.rating} size="sm" />
@@ -78,9 +80,11 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
           </section>
         </aside>
 
-        <section className="glass-card rounded-3xl p-5">
-          <h2 className="section-title mb-5">Team stats</h2>
-          <StatComparison homeStats={match.teamStats[home.id]} awayStats={match.teamStats[away.id]} />
+        <section className="glass-card flex h-[var(--match-card-height)] min-h-0 flex-col overflow-hidden rounded-3xl p-5">
+          <h2 className="section-title mb-5 shrink-0">Team stats</h2>
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            <StatComparison homeStats={match.teamStats[home.id]} awayStats={match.teamStats[away.id]} />
+          </div>
         </section>
 
         <div className="xl:col-span-2">
