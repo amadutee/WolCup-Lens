@@ -4,7 +4,7 @@ import { MatchLineups } from "@/components/MatchLineups";
 import { StatComparison } from "@/components/StatComparison";
 import { getTeam } from "@/data/mockData";
 import { footballDataProvider } from "@/lib/footballApi";
-import { calculateMatchRatings } from "@/lib/rating";
+import { getRatingProvider } from "@/config/ratingProvider";
 
 export async function generateStaticParams() {
   const matches = await footballDataProvider.getMatches();
@@ -21,7 +21,7 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
 
   const home = getTeam(match.homeTeamId);
   const away = getTeam(match.awayTeamId);
-  const ratings = calculateMatchRatings(match.playerStats);
+  const ratings = await getRatingProvider().getMatchRatings(match.id);
 
   return (
     <div className="space-y-8">
