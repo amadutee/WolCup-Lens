@@ -9,6 +9,8 @@ export const metadata: Metadata = {
 
 const navigation = [
   { href: "/", label: "Matches" },
+  { href: "/standings", label: "Standings" },
+  { href: "/bracket", label: "Bracket" },
   { href: "/rankings", label: "Rankings" },
 ];
 
