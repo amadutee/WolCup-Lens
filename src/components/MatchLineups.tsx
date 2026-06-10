@@ -273,32 +273,19 @@ function LineupLegend() {
 }
 
 function RatingExplanationDialog({ rating, onClose }: { rating: PlayerRating; onClose: () => void }) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    return null;
-  }
-
-  return createPortal(
+  return (
     <div
-      className="fixed inset-0 z-50 bg-ink/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 grid min-h-dvh place-items-center overflow-y-auto bg-ink/80 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label={`Rating explanation for ${rating.playerName}`}
       onClick={onClose}
     >
-      <div
-        className="fixed left-1/2 top-1/2 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl"
-        onClick={(event) => event.stopPropagation()}
-      >
+      <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto pt-14 sm:overflow-visible sm:pt-0" onClick={(event) => event.stopPropagation()}>
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white text-3xl font-light text-ink shadow-xl transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pitch-100"
+          className="absolute right-0 top-0 flex h-12 w-12 items-center justify-center rounded-full bg-white text-3xl font-light text-ink shadow-xl transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pitch-100 sm:-right-14"
           aria-label="Close rating explanation"
         >
           ×
