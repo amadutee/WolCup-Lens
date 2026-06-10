@@ -12,7 +12,7 @@ const stats: { key: StatKey; label: string; suffix?: string }[] = [
 
 export function StatComparison({ homeStats, awayStats }: { homeStats?: TeamStats; awayStats?: TeamStats }) {
   if (!homeStats || !awayStats) {
-    return <p className="rounded-2xl border border-dashed border-white/15 p-5 text-slate-400">Team stats will populate here once the match starts :).</p>;
+    return <p className="rounded-2xl border border-dashed border-white/15 p-5 text-slate-400">Team stats will populate here once the match starts :)</p>;
   }
 
   return (
