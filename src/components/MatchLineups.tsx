@@ -273,7 +273,17 @@ function LineupLegend() {
 }
 
 function RatingExplanationDialog({ rating, onClose }: { rating: PlayerRating; onClose: () => void }) {
-  return (
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalRoot(document.body);
+  }, []);
+
+  if (!portalRoot) {
+    return null;
+  }
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 grid min-h-dvh place-items-center overflow-y-auto bg-ink/80 p-4 backdrop-blur-sm"
       role="dialog"
@@ -293,7 +303,7 @@ function RatingExplanationDialog({ rating, onClose }: { rating: PlayerRating; on
         <RatingExplanation rating={rating} />
       </div>
     </div>,
-    document.body,
+    portalRoot,
   );
 }
 

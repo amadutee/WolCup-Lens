@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ApiFootballRatingProvider } from "../src/providers/ApiFootballRatingProvider";
+import { ApiFootballRatingProvider, apiFootballInternals } from "../src/providers/ApiFootballRatingProvider";
 import { SampleRatingProvider } from "../src/providers/SampleRatingProvider";
 import { StatsBombAdvancedRatingProvider, type StatsBombEvent } from "../src/providers/StatsBombAdvancedRatingProvider";
 import { getRatingProvider } from "../src/config/ratingProvider";
@@ -48,6 +48,74 @@ test("ApiFootballRatingProvider missing optional stats do not crash", () => {
   const provider = new ApiFootballRatingProvider();
   const rating = provider.ratePlayer(basePlayer({ minutesPlayed: undefined }));
   assert.equal(Number.isFinite(rating.rating), true);
+});
+
+test("ApiFootballRatingProvider maps fixture player API responses", () => {
+  const stats = apiFootballInternals.mapApiFootballFixturePlayers(
+    {
+      response: [
+        {
+          team: { id: 50, name: "Team A" },
+          players: [
+            {
+              player: { id: 99, name: "API Player" },
+              statistics: [
+                {
+                  games: { minutes: 88, position: "Attacker" },
+                  shots: { total: 4, on: 2 },
+                  goals: { total: 1, assists: 1 },
+                  passes: { total: 35, key: 3, accuracy: "86" },
+                  tackles: { total: 2, interceptions: 1 },
+                  cards: { yellow: 1, red: 0 },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    "fixture-99",
+    {},
+  );
+
+  assert.deepEqual(stats, [
+    {
+      playerId: "99",
+      matchId: "fixture-99",
+      teamId: "50",
+      playerName: "API Player",
+      position: "FWD",
+      minutesPlayed: 88,
+      goals: 1,
+      assists: 1,
+      shots: 4,
+      shotsOnTarget: 2,
+      keyPasses: 3,
+      passAccuracy: 86,
+      totalPasses: 35,
+      tackles: 2,
+      interceptions: 1,
+      saves: undefined,
+      penaltiesWon: undefined,
+      penaltiesConceded: undefined,
+      yellowCards: 1,
+      redCards: 0,
+    },
+  ]);
+});
+
+test("ApiFootballRatingProvider parses mock-to-fixture id maps", () => {
+  assert.deepEqual(apiFootballInternals.parseFixtureIdMap("arg-fra-live:123, bra-eng-upcoming:456, bad:nope"), {
+    "arg-fra-live": "123",
+    "bra-eng-upcoming": "456",
+  });
+});
+
+test("ApiFootballRatingProvider parses API-to-local team id maps", () => {
+  assert.deepEqual(apiFootballInternals.parseTeamIdMap("50:arg, 49:fra"), {
+    "50": "arg",
+    "49": "fra",
+  });
 });
 
 const pass = (playerId: number, playerName: string, recipientId: number, recipientName: string): StatsBombEvent => ({
