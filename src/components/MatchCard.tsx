@@ -9,8 +9,8 @@ const statusStyles = {
 };
 
 export function MatchCard({ match }: { match: Match }) {
-  const home = getTeam(match.homeTeamId);
-  const away = getTeam(match.awayTeamId);
+  const home = match.homeTeam ?? getTeam(match.homeTeamId);
+  const away = match.awayTeam ?? getTeam(match.awayTeamId);
   const kickoff = new Intl.DateTimeFormat("en", {
     month: "short",
     day: "numeric",

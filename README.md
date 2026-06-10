@@ -99,6 +99,8 @@ RATING_PROVIDER=api-football
 
 `NEXT_PUBLIC_RATING_PROVIDER=api-football` is still supported as a local-development fallback, but deployments should prefer `RATING_PROVIDER` because `NEXT_PUBLIC_*` variables can be inlined at build time by Next.js hosting providers.
 
+When the resolved rating provider is `api-football`, the Matches page also loads live and upcoming fixtures from API-Football so match route ids are numeric API fixture ids by default. If the resolved provider is `sample`, including a server-side `NEXT_PUBLIC_RATING_PROVIDER=sample` fallback, the Matches page uses the bundled sample matches. API-Football fixture discovery defaults to World Cup league `1`, season `2026`, and the next `10` fixtures; override those with `API_FOOTBALL_LEAGUE_ID`, `API_FOOTBALL_SEASON`, and `API_FOOTBALL_UPCOMING_COUNT`.
+
 If the app route id is not the numeric API-Football fixture id, map the local match id to the fixture id with a comma-separated list:
 
 ```bash
