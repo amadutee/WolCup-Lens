@@ -4,6 +4,8 @@ import { footballDataProvider } from "@/lib/footballApi";
 import { getRatingProvider } from "@/config/ratingProvider";
 import type { PlayerRating, Position } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function RankingsPage() {
   const matches = await footballDataProvider.getMatches();
   const ratingProvider = getRatingProvider();
