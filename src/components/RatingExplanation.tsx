@@ -8,7 +8,7 @@ export function RatingExplanation({ rating }: { rating: PlayerRating }) {
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-pitch-100/80">Rating explanation</p>
           <h2 className="mt-1 text-2xl font-black text-white">{rating.playerName}</h2>
-          <p className="text-sm text-slate-400">Base score {rating.baseRating.toFixed(1)} adjusted by position-specific stat weights.</p>
+          <p className="text-sm text-slate-400">Base score {rating.baseRating.toFixed(1)} adjusted as the match proceeds.</p>
         </div>
         <RatingBadge rating={rating.rating} size="lg" />
       </div>
