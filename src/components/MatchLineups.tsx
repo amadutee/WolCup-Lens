@@ -22,12 +22,8 @@ type PlayerCardProps = {
 
 export function MatchLineups({ home, away, lineups, ratings }: MatchLineupsProps) {
   const ratingsByPlayer = useMemo(() => new Map(ratings.map((rating) => [rating.playerId, rating])), [ratings]);
-  const firstRatedStarter = [lineups[home.id], lineups[away.id]]
-    .flatMap((lineup) => lineup?.starters ?? [])
-    .map((player) => ratingsByPlayer.get(player.playerId))
-    .find(Boolean);
-  const [selectedPlayerId, setSelectedPlayerId] = useState(firstRatedStarter?.playerId ?? ratings[0]?.playerId ?? "");
-  const selectedRating = ratingsByPlayer.get(selectedPlayerId) ?? firstRatedStarter ?? ratings[0];
+  const [selectedPlayerId, setSelectedPlayerId] = useState("");
+  const selectedRating = selectedPlayerId ? ratingsByPlayer.get(selectedPlayerId) : undefined;
 
   return (
     <section className="glass-card rounded-3xl p-5">
@@ -36,90 +32,135 @@ export function MatchLineups({ home, away, lineups, ratings }: MatchLineupsProps
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-pitch-100/80">Tactical view</p>
           <h2 className="section-title">Lineups</h2>
         </div>
-        <p className="max-w-xl text-sm text-slate-400">Tap a player to open the pass-rank rating breakdown on the right.</p>
+        <p className="max-w-xl text-sm text-slate-400">Both teams share one tactical tile. Tap a rated player to open their pass-rank breakdown in a pop-up.</p>
       </div>
 
-      <div className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_25rem]">
-        <div className="grid gap-5 xl:grid-cols-2">
-          {[home, away].map((team, index) => (
-            <TeamPitch
-              key={team.id}
-              team={team}
-              lineup={lineups[team.id]}
-              ratingsByPlayer={ratingsByPlayer}
-              selectedPlayerId={selectedPlayerId}
-              onSelect={setSelectedPlayerId}
-              reverse={index === 1}
-            />
-          ))}
-        </div>
+      <CombinedLineupTile
+        home={home}
+        away={away}
+        homeLineup={lineups[home.id]}
+        awayLineup={lineups[away.id]}
+        ratingsByPlayer={ratingsByPlayer}
+        selectedPlayerId={selectedPlayerId}
+        onSelect={setSelectedPlayerId}
+      />
 
-        <aside className="2xl:sticky 2xl:top-6 2xl:self-start">
-          {selectedRating ? (
-            <RatingExplanation rating={selectedRating} />
-          ) : (
-            <div className="rounded-3xl border border-white/10 bg-ink/40 p-5 text-sm text-slate-400">
-              Rating explanations will appear here once player data is available.
-            </div>
-          )}
-        </aside>
-      </div>
+      {selectedRating ? (
+        <RatingExplanationDialog rating={selectedRating} onClose={() => setSelectedPlayerId("")} />
+      ) : null}
     </section>
   );
 }
 
-function TeamPitch({
-  team,
-  lineup,
+function CombinedLineupTile({
+  home,
+  away,
+  homeLineup,
+  awayLineup,
   ratingsByPlayer,
   selectedPlayerId,
   onSelect,
-  reverse,
 }: {
-  team: Team;
-  lineup?: TeamLineup;
+  home: Team;
+  away: Team;
+  homeLineup?: TeamLineup;
+  awayLineup?: TeamLineup;
   ratingsByPlayer: Map<string, PlayerRating>;
   selectedPlayerId: string;
   onSelect: (playerId: string) => void;
-  reverse: boolean;
 }) {
-  if (!lineup) {
+  if (!homeLineup || !awayLineup) {
     return (
       <div className="rounded-[2rem] border border-white/10 bg-ink/40 p-5">
-        <h3 className="text-lg font-black text-white">{team.flag} {team.name}</h3>
-        <p className="mt-4 text-sm text-slate-400">Lineup pending.</p>
+        <h3 className="text-lg font-black text-white">{home.flag} {home.name} vs {away.flag} {away.name}</h3>
+        <p className="mt-4 text-sm text-slate-400">Lineups pending.</p>
       </div>
     );
   }
 
-  const rows = buildFormationRows(lineup).filter((row) => row.players.length > 0);
-  const orderedRows = reverse ? [...rows].reverse() : rows;
+  const homeRows = [...buildFormationRows(homeLineup)].reverse().filter((row) => row.players.length > 0);
+  const awayRows = buildFormationRows(awayLineup).filter((row) => row.players.length > 0);
 
   return (
     <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-emerald-950/50">
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-ink/70 p-4">
-        <h3 className="text-lg font-black text-white">{team.flag} {team.name}</h3>
-        <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-pitch-100">{lineup.formation}</span>
-      </div>
-      <div className="relative min-h-[38rem] overflow-hidden bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.16)_0_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[length:24px_24px,100%_100%,100%_50%] p-4">
-        <div className="pointer-events-none absolute inset-4 rounded-[1.5rem] border-2 border-white/20" />
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20" />
-        <div className="relative z-10 flex h-full min-h-[35rem] flex-col justify-between gap-4 py-3">
-          {orderedRows.map((row, rowIndex) => (
-            <div key={`${row.label}-${rowIndex}`} className="flex justify-center gap-2 sm:gap-3">
-              {row.players.map((player) => (
-                <PlayerCard
-                  key={player.playerId}
-                  player={player}
-                  rating={ratingsByPlayer.get(player.playerId)}
-                  isSelected={selectedPlayerId === player.playerId}
-                  onSelect={() => onSelect(player.playerId)}
-                />
-              ))}
-            </div>
-          ))}
+      <TeamHeader team={home} formation={homeLineup.formation} />
+      <div className="relative min-h-[64rem] overflow-hidden bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.2)_0_2px,transparent_2px),linear-gradient(90deg,rgba(255,255,255,0.12)_2px,transparent_2px),linear-gradient(rgba(255,255,255,0.12)_2px,transparent_2px)] bg-[length:32px_32px,100%_100%,100%_50%] p-4 lg:min-h-[70rem]">
+        <PitchMarkings />
+        <div className="relative z-10 grid min-h-[61rem] grid-rows-2 gap-8 py-3 lg:min-h-[67rem]">
+          <FormationHalf
+            rows={homeRows}
+            ratingsByPlayer={ratingsByPlayer}
+            selectedPlayerId={selectedPlayerId}
+            onSelect={onSelect}
+          />
+          <FormationHalf
+            rows={awayRows}
+            ratingsByPlayer={ratingsByPlayer}
+            selectedPlayerId={selectedPlayerId}
+            onSelect={onSelect}
+          />
         </div>
       </div>
+      <TeamHeader team={away} formation={awayLineup.formation} align="bottom" />
+      <BenchAndManagers home={home} away={away} homeLineup={homeLineup} awayLineup={awayLineup} />
+      <LineupLegend />
+    </div>
+  );
+}
+
+function TeamHeader({ team, formation, align = "top" }: { team: Team; formation: string; align?: "top" | "bottom" }) {
+  return (
+    <div className={`flex items-center justify-between gap-3 border-white/10 bg-ink/70 p-4 ${align === "top" ? "border-b" : "border-y"}`}>
+      <h3 className="flex items-center gap-3 text-lg font-black text-white">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-2xl shadow-inner">{team.flag}</span>
+        {team.name}
+      </h3>
+      <span className="rounded-full bg-pitch-900/80 px-3 py-1 text-sm font-black text-pitch-100 ring-1 ring-pitch-300/20">{formation}</span>
+    </div>
+  );
+}
+
+function PitchMarkings() {
+  return (
+    <>
+      <div className="pointer-events-none absolute inset-4 rounded-[1.5rem] border-2 border-white/20" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20" />
+      <div className="pointer-events-none absolute left-4 right-4 top-1/2 border-t-2 border-white/20" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/30" />
+      <div className="pointer-events-none absolute left-1/2 top-4 h-28 w-1/2 -translate-x-1/2 rounded-b-2xl border-x-2 border-b-2 border-white/20" />
+      <div className="pointer-events-none absolute bottom-4 left-1/2 h-28 w-1/2 -translate-x-1/2 rounded-t-2xl border-x-2 border-t-2 border-white/20" />
+      <div className="pointer-events-none absolute left-1/2 top-4 h-14 w-1/4 -translate-x-1/2 rounded-b-2xl border-x-2 border-b-2 border-white/20" />
+      <div className="pointer-events-none absolute bottom-4 left-1/2 h-14 w-1/4 -translate-x-1/2 rounded-t-2xl border-x-2 border-t-2 border-white/20" />
+    </>
+  );
+}
+
+function FormationHalf({
+  rows,
+  ratingsByPlayer,
+  selectedPlayerId,
+  onSelect,
+}: {
+  rows: ReturnType<typeof buildFormationRows>;
+  ratingsByPlayer: Map<string, PlayerRating>;
+  selectedPlayerId: string;
+  onSelect: (playerId: string) => void;
+}) {
+  return (
+    <div className="flex min-h-0 flex-col justify-between gap-3">
+      {rows.map((row, rowIndex) => (
+        <div key={`${row.label}-${rowIndex}`} className="flex justify-center gap-2 sm:gap-3 lg:gap-5">
+          {row.players.map((player) => (
+            <PlayerCard
+              key={player.playerId}
+              player={player}
+              rating={ratingsByPlayer.get(player.playerId)}
+              isSelected={selectedPlayerId === player.playerId}
+              onSelect={() => onSelect(player.playerId)}
+            />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
@@ -139,7 +180,6 @@ function PlayerCard({ player, rating, isSelected, onSelect }: PlayerCardProps) {
         <span className="absolute -left-1 -top-1 rounded-full bg-white px-1.5 py-0.5 text-[0.65rem] font-black text-ink">{player.shirtNumber}</span>
       </span>
       <span className="mt-2 line-clamp-2 min-h-8 text-[0.72rem] font-black leading-tight text-white">{shortName(player.name)}</span>
-      <span className="mt-1 rounded-full bg-white/10 px-2 py-0.5 text-[0.6rem] font-bold text-slate-300">{player.position}</span>
       {rating ? (
         <>
           <span className="mt-2"><RatingBadge rating={rating.rating} size="sm" /></span>
@@ -149,6 +189,103 @@ function PlayerCard({ player, rating, isSelected, onSelect }: PlayerCardProps) {
         <span className="mt-2 rounded-full bg-slate-700 px-2 py-1 text-[0.65rem] font-bold text-slate-300">Pending</span>
       )}
     </button>
+  );
+}
+
+function BenchAndManagers({ home, away, homeLineup, awayLineup }: { home: Team; away: Team; homeLineup: TeamLineup; awayLineup: TeamLineup }) {
+  const maxBenchRows = Math.max(homeLineup.substitutes.length, awayLineup.substitutes.length);
+
+  return (
+    <div className="border-t border-white/10 bg-ink/80 p-4">
+      <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-white/10 p-4">
+          <span className="text-2xl">{home.flag}</span>
+          <h3 className="text-xl font-black text-white">Bench</h3>
+          <span className="justify-self-end text-2xl">{away.flag}</span>
+        </div>
+        <div className="divide-y divide-white/10">
+          {Array.from({ length: maxBenchRows }).map((_, index) => (
+            <div key={index} className="grid grid-cols-1 gap-3 p-3 md:grid-cols-2">
+              <BenchPlayer player={homeLineup.substitutes[index]} />
+              <BenchPlayer player={awayLineup.substitutes[index]} align="right" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 rounded-3xl border border-white/10 bg-white/[0.03] p-4 md:grid-cols-2">
+        <ManagerCard team={home} manager={homeLineup.manager} />
+        <ManagerCard team={away} manager={awayLineup.manager} align="right" />
+      </div>
+    </div>
+  );
+}
+
+function BenchPlayer({ player, align = "left" }: { player?: LineupPlayer; align?: "left" | "right" }) {
+  if (!player) {
+    return <div className="hidden md:block" />;
+  }
+
+  return (
+    <div className={`flex items-center gap-3 ${align === "right" ? "md:flex-row-reverse md:text-right" : ""}`}>
+      <Image className="h-14 w-14 rounded-2xl border border-white/20 object-cover" src={portraitDataUri(player.name, player.playerId)} alt={`${player.name} headshot`} width={56} height={56} unoptimized />
+      <div className="min-w-0">
+        <p className="truncate font-black text-white">{player.name}</p>
+        <p className="text-sm font-semibold text-slate-400">#{player.shirtNumber} · {player.position}</p>
+      </div>
+    </div>
+  );
+}
+
+function ManagerCard({ team, manager, align = "left" }: { team: Team; manager?: string; align?: "left" | "right" }) {
+  return (
+    <div className={`flex items-center gap-3 ${align === "right" ? "md:flex-row-reverse md:text-right" : ""}`}>
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-2xl">{team.flag}</span>
+      <div>
+        <p className="font-black text-white">{manager ?? "Manager pending"}</p>
+        <p className="text-sm font-semibold text-slate-400">{team.shortName} manager</p>
+      </div>
+    </div>
+  );
+}
+
+function LineupLegend() {
+  const items = [
+    ["⚽", "Goal"],
+    ["🟨", "Yellow card"],
+    ["🟥", "Red card"],
+    ["⬆️", "Sub in"],
+    ["⬇️", "Sub out"],
+    ["✚", "Injured"],
+  ];
+
+  return (
+    <div className="grid gap-2 border-t border-white/10 bg-ink/90 p-4 text-sm font-bold text-slate-400 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map(([icon, label]) => (
+        <div key={label} className="flex items-center gap-2">
+          <span className="text-base">{icon}</span>
+          {label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RatingExplanationDialog({ rating, onClose }: { rating: PlayerRating; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`Rating explanation for ${rating.playerName}`} onClick={onClose}>
+      <div className="relative w-full max-w-xl" onClick={(event) => event.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute -right-2 -top-14 flex h-12 w-12 items-center justify-center rounded-full bg-white text-3xl font-light text-ink shadow-xl transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pitch-100 sm:-right-14 sm:top-0"
+          aria-label="Close rating explanation"
+        >
+          ×
+        </button>
+        <RatingExplanation rating={rating} />
+      </div>
+    </div>
   );
 }
 

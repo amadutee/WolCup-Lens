@@ -100,6 +100,7 @@ export type TeamLineup = {
   formation: string;
   starters: LineupPlayer[];
   substitutes: LineupPlayer[];
+  manager?: string;
 };
 
 export type TimelineEvent = {
