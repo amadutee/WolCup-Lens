@@ -20,7 +20,7 @@ export default async function RankingsPage() {
         <p className="mt-4 max-w-2xl text-slate-300">Rankings are calculated through the configured rating provider while keeping the same tournament view.</p>
       </section>
 
-      <div className="grid gap-8 xl:grid-cols-3">
+      <div className="grid gap-8 [--rankings-card-height:58rem] xl:grid-cols-3">
         <RankingPanel title="Top players">
           {allRatings.slice().sort((a, b) => b.rating - a.rating).map((rating, index) => (
             <RankingRow key={`${rating.playerId}-${index}`} index={index + 1} label={rating.playerName} meta={`${getTeam(rating.teamId).shortName} · ${rating.position}`} rating={rating.rating} />
@@ -45,9 +45,9 @@ export default async function RankingsPage() {
 
 function RankingPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="glass-card rounded-3xl p-5">
-      <h2 className="section-title mb-5">{title}</h2>
-      <div className="space-y-3">{children}</div>
+    <section className="glass-card flex h-[var(--rankings-card-height)] min-h-0 flex-col overflow-hidden rounded-3xl p-5">
+      <h2 className="section-title mb-5 shrink-0">{title}</h2>
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">{children}</div>
     </section>
   );
 }
