@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type { LineupPlayer, PlayerRating, Team, TeamLineup } from "@/lib/types";
 import { RatingBadge } from "./RatingBadge";
 import { RatingExplanation } from "./RatingExplanation";
@@ -272,20 +273,40 @@ function LineupLegend() {
 }
 
 function RatingExplanationDialog({ rating, onClose }: { rating: PlayerRating; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`Rating explanation for ${rating.playerName}`} onClick={onClose}>
-      <div className="relative w-full max-w-xl" onClick={(event) => event.stopPropagation()}>
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 bg-ink/80 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Rating explanation for ${rating.playerName}`}
+      onClick={onClose}
+    >
+      <div
+        className="fixed left-1/2 top-1/2 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl"
+        onClick={(event) => event.stopPropagation()}
+      >
         <button
           type="button"
           onClick={onClose}
-          className="absolute -right-2 -top-14 flex h-12 w-12 items-center justify-center rounded-full bg-white text-3xl font-light text-ink shadow-xl transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pitch-100 sm:-right-14 sm:top-0"
+          className="absolute right-3 top-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white text-3xl font-light text-ink shadow-xl transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pitch-100"
           aria-label="Close rating explanation"
         >
           ×
         </button>
         <RatingExplanation rating={rating} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
