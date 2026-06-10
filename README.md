@@ -84,8 +84,29 @@ NEXT_PUBLIC_RATING_PROVIDER=statsbomb-advanced
 ```
 
 - `sample` is the local-development default and adapts the existing mock match data to the shared `PlayerRatingProvider` interface.
-- `api-football` assumes API-Football-style aggregate player stats only, so it uses weighted scoring for attacking, playmaking, possession, defensive, goalkeeper, and discipline categories rather than pass-network PageRank.
+- `api-football` uses API-Football aggregate player stats when `API_FOOTBALL_API_KEY` is available, then scores attacking, playmaking, possession, defensive, goalkeeper, and discipline categories rather than pass-network PageRank.
 - `statsbomb-advanced` assumes StatsBomb-style event JSON and builds a weighted passer-to-recipient graph for PageRank-style influence, plus event modules for xG chain, goals, assists, shot assists, defensive actions, pressures, and ball recoveries.
+
+To connect API-Football, keep the secret key server-side and select the provider in `.env.local`:
+
+```bash
+API_FOOTBALL_API_KEY=your_api_sports_key
+NEXT_PUBLIC_RATING_PROVIDER=api-football
+```
+
+If the app route id is not the numeric API-Football fixture id, map the local match id to the fixture id with a comma-separated list:
+
+```bash
+API_FOOTBALL_FIXTURE_ID_MAP=arg-fra-live:123456,esp-usa-recent:789012
+```
+
+When API-Football team ids differ from the app's local team ids, map them as well:
+
+```bash
+API_FOOTBALL_TEAM_ID_MAP=50:arg,49:fra
+```
+
+`API_FOOTBALL_BASE_URL` can override the default `https://v3.football.api-sports.io` for tests or proxies. Without an API key or fixture id, the provider falls back to the local mock player stats.
 
 To connect a paid StatsBomb API later, implement a new `StatsBombDataLoader` that returns `{ events, players, threeSixty }` and pass it to `StatsBombAdvancedRatingProvider`; the rest of the app can continue calling `getRatingProvider()` unchanged.
 
