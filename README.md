@@ -75,24 +75,29 @@ print(result.ratings["st"].explanation)
 
 The Next.js app reads player ratings through `getRatingProvider()` in `src/config/ratingProvider.ts`, so UI routes do not need to know whether ratings come from mock data, API-Football aggregates, or StatsBomb events.
 
-Switch providers with:
+Switch providers with the server-only deployment variable, or with the public variable for local development:
 
 ```bash
-NEXT_PUBLIC_RATING_PROVIDER=sample
+RATING_PROVIDER=sample
+RATING_PROVIDER=api-football
+RATING_PROVIDER=statsbomb-advanced
+
+# Local/browser-exposed fallback also works:
 NEXT_PUBLIC_RATING_PROVIDER=api-football
-NEXT_PUBLIC_RATING_PROVIDER=statsbomb-advanced
 ```
 
 - `sample` is the local-development default and adapts the existing mock match data to the shared `PlayerRatingProvider` interface.
 - `api-football` uses API-Football aggregate player stats when `API_FOOTBALL_API_KEY` is available, then scores attacking, playmaking, possession, defensive, goalkeeper, and discipline categories rather than pass-network PageRank.
 - `statsbomb-advanced` assumes StatsBomb-style event JSON and builds a weighted passer-to-recipient graph for PageRank-style influence, plus event modules for xG chain, goals, assists, shot assists, defensive actions, pressures, and ball recoveries.
 
-To connect API-Football, keep the secret key server-side and select the provider in `.env.local`:
+To connect API-Football/API-Sports in deployment, keep the secret key server-side and select the provider with the server-only variable:
 
 ```bash
 API_FOOTBALL_API_KEY=your_api_sports_key
-NEXT_PUBLIC_RATING_PROVIDER=api-football
+RATING_PROVIDER=api-football
 ```
+
+`NEXT_PUBLIC_RATING_PROVIDER=api-football` is still supported as a local-development fallback, but deployments should prefer `RATING_PROVIDER` because `NEXT_PUBLIC_*` variables can be inlined at build time by Next.js hosting providers.
 
 If the app route id is not the numeric API-Football fixture id, map the local match id to the fixture id with a comma-separated list:
 
@@ -106,7 +111,7 @@ When API-Football team ids differ from the app's local team ids, map them as wel
 API_FOOTBALL_TEAM_ID_MAP=50:arg,49:fra
 ```
 
-`API_FOOTBALL_BASE_URL` can override the default `https://v3.football.api-sports.io` for tests or proxies. Without an API key or fixture id, the provider falls back to the local mock player stats.
+`API_FOOTBALL_BASE_URL` can override the default `https://v3.football.api-sports.io` for tests or proxies. In production, missing API keys, missing fixture ids, or empty API player-stat responses now throw instead of silently using sample data. Set `API_FOOTBALL_ALLOW_SAMPLE_FALLBACK=true` only when you intentionally want sample fallback in deployment.
 
 To connect a paid StatsBomb API later, implement a new `StatsBombDataLoader` that returns `{ events, players, threeSixty }` and pass it to `StatsBombAdvancedRatingProvider`; the rest of the app can continue calling `getRatingProvider()` unchanged.
 

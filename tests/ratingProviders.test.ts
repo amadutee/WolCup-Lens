@@ -173,5 +173,44 @@ test("rating provider factory selects configured providers", () => {
   assert.ok(getRatingProvider("sample") instanceof SampleRatingProvider);
   assert.ok(getRatingProvider("api-football") instanceof ApiFootballRatingProvider);
   assert.ok(getRatingProvider("statsbomb-advanced") instanceof StatsBombAdvancedRatingProvider);
+  assert.ok(getRatingProvider(" API-FOOTBALL ") instanceof ApiFootballRatingProvider);
   assert.ok(getRatingProvider("unknown") instanceof SampleRatingProvider);
 });
+
+test("rating provider factory prefers server-only deployment provider", () => {
+  const originalServerProvider = process.env.RATING_PROVIDER;
+  const originalPublicProvider = process.env.NEXT_PUBLIC_RATING_PROVIDER;
+
+  process.env.RATING_PROVIDER = "api-football";
+  process.env.NEXT_PUBLIC_RATING_PROVIDER = "sample";
+
+  try {
+    assert.ok(getRatingProvider() instanceof ApiFootballRatingProvider);
+  } finally {
+    restoreEnv("RATING_PROVIDER", originalServerProvider);
+    restoreEnv("NEXT_PUBLIC_RATING_PROVIDER", originalPublicProvider);
+  }
+});
+
+test("ApiFootballRatingProvider disables sample fallback in production by default", () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalFallback = process.env.API_FOOTBALL_ALLOW_SAMPLE_FALLBACK;
+
+  (process.env as Record<string, string | undefined>)["NODE_ENV"] = "production";
+  delete process.env.API_FOOTBALL_ALLOW_SAMPLE_FALLBACK;
+
+  try {
+    assert.equal(apiFootballInternals.allowsSampleFallback(), false);
+  } finally {
+    restoreEnv("NODE_ENV", originalNodeEnv);
+    restoreEnv("API_FOOTBALL_ALLOW_SAMPLE_FALLBACK", originalFallback);
+  }
+});
+
+function restoreEnv(key: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key];
+  } else {
+    process.env[key] = value;
+  }
+}

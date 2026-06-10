@@ -63,12 +63,19 @@ const defaultLoader: ApiFootballStatsLoader = async (matchId) => {
   const fixtureId = resolveFixtureId(matchId);
   const apiKey = process.env.API_FOOTBALL_API_KEY;
 
-  if (!apiKey || !fixtureId) {
-    return getMockPlayerStats(matchId);
+  if (!apiKey) {
+    return fallbackOrThrow(matchId, "API_FOOTBALL_API_KEY is not configured");
+  }
+
+  if (!fixtureId) {
+    return fallbackOrThrow(
+      matchId,
+      `No API-Football fixture id is configured for match "${matchId}". Set API_FOOTBALL_FIXTURE_ID_MAP or use numeric API fixture ids.`,
+    );
   }
 
   const stats = await fetchApiFootballPlayerStats(fixtureId, apiKey, matchId);
-  return stats.length > 0 ? stats : getMockPlayerStats(matchId);
+  return stats.length > 0 ? stats : fallbackOrThrow(matchId, `API-Football returned no player stats for fixture ${fixtureId}`);
 };
 
 async function fetchApiFootballPlayerStats(fixtureId: string, apiKey: string, matchId: string): Promise<PlayerMatchStats[]> {
@@ -126,6 +133,19 @@ function parseTeamIdMap(value?: string): Record<string, string> {
 
 function getMockPlayerStats(matchId: string) {
   return getMatch(matchId)?.playerStats ?? [];
+}
+
+function fallbackOrThrow(matchId: string, reason: string): PlayerMatchStats[] {
+  if (allowsSampleFallback()) {
+    console.warn(`[ApiFootballRatingProvider] ${reason}; using sample player stats for ${matchId}.`);
+    return getMockPlayerStats(matchId);
+  }
+
+  throw new Error(`${reason}. To allow sample fallback, set API_FOOTBALL_ALLOW_SAMPLE_FALLBACK=true.`);
+}
+
+function allowsSampleFallback() {
+  return process.env.API_FOOTBALL_ALLOW_SAMPLE_FALLBACK === "true" || (process.env.API_FOOTBALL_ALLOW_SAMPLE_FALLBACK !== "false" && process.env.NODE_ENV !== "production");
 }
 
 function resolveTeamId(
@@ -264,4 +284,5 @@ export const apiFootballInternals = {
   parseFixtureIdMap,
   parseTeamIdMap,
   resolveFixtureId,
+  allowsSampleFallback,
 };

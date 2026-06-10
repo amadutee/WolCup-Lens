@@ -1,6 +1,8 @@
 import { MatchCard } from "@/components/MatchCard";
 import { footballDataProvider } from "@/lib/footballApi";
 
+export const dynamic = "force-dynamic";
+
 const sections = [
   { key: "live", title: "Live now", description: "Momentum, score state, and player ratings as the match unfolds." },
   { key: "upcoming", title: "Upcoming fixtures", description: "Kickoff context and match cards ready for API-powered previews." },

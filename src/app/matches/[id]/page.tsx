@@ -6,10 +6,7 @@ import { getTeam } from "@/data/mockData";
 import { footballDataProvider } from "@/lib/footballApi";
 import { getRatingProvider } from "@/config/ratingProvider";
 
-export async function generateStaticParams() {
-  const matches = await footballDataProvider.getMatches();
-  return matches.map((match) => ({ id: match.id }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function MatchDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
