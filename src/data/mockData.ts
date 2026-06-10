@@ -86,6 +86,7 @@ export const matches: Match[] = [
     lineups: {
       arg: {
         formation: "4-3-3",
+        manager: "Lionel Scaloni",
         starters: [
           { playerId: "arg-10", name: "Lionel Messi", shirtNumber: 10, position: "FWD" },
           { playerId: "arg-9", name: "Julián Álvarez", shirtNumber: 9, position: "FWD" },
@@ -99,10 +100,18 @@ export const matches: Match[] = [
           { playerId: "arg-3", name: "Nicolás Tagliafico", shirtNumber: 3, position: "DEF" },
           { playerId: "arg-23", name: "Emiliano Martínez", shirtNumber: 23, position: "GK" },
         ],
-        substitutes: [{ playerId: "arg-22", name: "Lautaro Martínez", shirtNumber: 22, position: "FWD" }],
+        substitutes: [
+          { playerId: "arg-22", name: "Lautaro Martínez", shirtNumber: 22, position: "FWD" },
+          { playerId: "arg-21", name: "Paulo Dybala", shirtNumber: 21, position: "FWD" },
+          { playerId: "arg-16", name: "Thiago Almada", shirtNumber: 16, position: "MID" },
+          { playerId: "arg-14", name: "Exequiel Palacios", shirtNumber: 14, position: "MID" },
+          { playerId: "arg-6", name: "Germán Pezzella", shirtNumber: 6, position: "DEF" },
+          { playerId: "arg-1", name: "Franco Armani", shirtNumber: 1, position: "GK" },
+        ],
       },
       fra: {
         formation: "4-2-3-1",
+        manager: "Didier Deschamps",
         starters: [
           { playerId: "fra-10", name: "Kylian Mbappé", shirtNumber: 10, position: "FWD" },
           { playerId: "fra-9", name: "Olivier Giroud", shirtNumber: 9, position: "FWD" },
@@ -116,7 +125,14 @@ export const matches: Match[] = [
           { playerId: "fra-22", name: "Theo Hernández", shirtNumber: 22, position: "DEF" },
           { playerId: "fra-1", name: "Mike Maignan", shirtNumber: 1, position: "GK" },
         ],
-        substitutes: [{ playerId: "fra-12", name: "Randal Kolo Muani", shirtNumber: 12, position: "FWD" }],
+        substitutes: [
+          { playerId: "fra-12", name: "Randal Kolo Muani", shirtNumber: 12, position: "FWD" },
+          { playerId: "fra-20", name: "Kingsley Coman", shirtNumber: 20, position: "FWD" },
+          { playerId: "fra-25", name: "Eduardo Camavinga", shirtNumber: 25, position: "MID" },
+          { playerId: "fra-13", name: "Ibrahima Konaté", shirtNumber: 13, position: "DEF" },
+          { playerId: "fra-21", name: "Lucas Hernández", shirtNumber: 21, position: "DEF" },
+          { playerId: "fra-16", name: "Alphonse Areola", shirtNumber: 16, position: "GK" },
+        ],
       },
     },
     playerStats: [...argentinaPlayers, ...francePlayers],
