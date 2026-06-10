@@ -4,6 +4,7 @@ import { ApiFootballRatingProvider, apiFootballInternals } from "../src/provider
 import { SampleRatingProvider } from "../src/providers/SampleRatingProvider";
 import { StatsBombAdvancedRatingProvider, type StatsBombEvent } from "../src/providers/StatsBombAdvancedRatingProvider";
 import { getRatingProvider } from "../src/config/ratingProvider";
+import { footballApiInternals } from "../src/lib/footballApi";
 import type { PlayerMatchStats } from "../src/lib/types";
 
 const basePlayer = (overrides: Partial<PlayerMatchStats> = {}): PlayerMatchStats => ({
@@ -102,6 +103,40 @@ test("ApiFootballRatingProvider maps fixture player API responses", () => {
       redCards: 0,
     },
   ]);
+});
+
+
+test("ApiFootballDataProvider maps API fixtures to numeric match ids and dynamic teams", () => {
+  const match = footballApiInternals.mapApiFootballFixture({
+    fixture: { id: 12345, date: "2026-07-01T20:00:00Z", venue: { name: "Test Stadium", city: "Test City" }, status: { short: "NS", long: "Not Started" } },
+    league: { name: "World Cup", round: "Group Stage" },
+    teams: { home: { id: 50, name: "Argentina" }, away: { id: 49, name: "France" } },
+    goals: { home: null, away: null },
+  });
+
+  assert.equal(match.id, "12345");
+  assert.equal(match.status, "upcoming");
+  assert.equal(match.homeTeamId, "50");
+  assert.equal(match.awayTeamId, "49");
+  assert.equal(match.homeTeam?.shortName, "ARG");
+  assert.equal(match.awayTeam?.shortName, "FRA");
+});
+
+test("football data provider selection uses sample matches when configured", () => {
+  const originalServerProvider = process.env.RATING_PROVIDER;
+  const originalPublicProvider = process.env.NEXT_PUBLIC_RATING_PROVIDER;
+
+  delete process.env.RATING_PROVIDER;
+  process.env.NEXT_PUBLIC_RATING_PROVIDER = "sample";
+
+  try {
+    assert.equal(footballApiInternals.shouldUseApiFootballDataProvider(), false);
+    process.env.NEXT_PUBLIC_RATING_PROVIDER = "api-football";
+    assert.equal(footballApiInternals.shouldUseApiFootballDataProvider(), true);
+  } finally {
+    restoreEnv("RATING_PROVIDER", originalServerProvider);
+    restoreEnv("NEXT_PUBLIC_RATING_PROVIDER", originalPublicProvider);
+  }
 });
 
 test("ApiFootballRatingProvider parses mock-to-fixture id maps", () => {

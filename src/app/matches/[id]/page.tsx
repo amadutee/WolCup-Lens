@@ -16,8 +16,8 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
     notFound();
   }
 
-  const home = getTeam(match.homeTeamId);
-  const away = getTeam(match.awayTeamId);
+  const home = match.homeTeam ?? getTeam(match.homeTeamId);
+  const away = match.awayTeam ?? getTeam(match.awayTeamId);
   const ratings = await getRatingProvider().getMatchRatings(match.id);
 
   return (
@@ -69,7 +69,7 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
                   <RatingBadge rating={rating.rating} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold text-white">{rating.playerName}</p>
-                    <p className="text-sm text-slate-400">{getTeam(rating.teamId).shortName} · {rating.position}</p>
+                    <p className="text-sm text-slate-400">{teamShortName(rating.teamId, home, away)} · {rating.position}</p>
                   </div>
                 </div>
               ))}
@@ -100,4 +100,16 @@ function TeamScore({ flag, name, score }: { flag: string; name: string; score: n
       <p className="mt-2 text-5xl font-black text-white">{score ?? "–"}</p>
     </div>
   );
+}
+
+function teamShortName(teamId: string, home: ReturnType<typeof getTeam>, away: ReturnType<typeof getTeam>) {
+  if (teamId === home.id) {
+    return home.shortName;
+  }
+
+  if (teamId === away.id) {
+    return away.shortName;
+  }
+
+  return teamId;
 }

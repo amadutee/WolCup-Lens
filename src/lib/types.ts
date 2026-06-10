@@ -133,6 +133,8 @@ export type Match = {
   minute?: number;
   homeTeamId: string;
   awayTeamId: string;
+  homeTeam?: Team;
+  awayTeam?: Team;
   homeScore: number | null;
   awayScore: number | null;
   timeline: TimelineEvent[];
