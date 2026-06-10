@@ -273,12 +273,18 @@ function LineupLegend() {
 
 function RatingExplanationDialog({ rating, onClose }: { rating: PlayerRating; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`Rating explanation for ${rating.playerName}`} onClick={onClose}>
-      <div className="relative w-full max-w-xl" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 grid min-h-dvh place-items-center overflow-y-auto bg-ink/80 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Rating explanation for ${rating.playerName}`}
+      onClick={onClose}
+    >
+      <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto pt-14 sm:overflow-visible sm:pt-0" onClick={(event) => event.stopPropagation()}>
         <button
           type="button"
           onClick={onClose}
-          className="absolute -right-2 -top-14 flex h-12 w-12 items-center justify-center rounded-full bg-white text-3xl font-light text-ink shadow-xl transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pitch-100 sm:-right-14 sm:top-0"
+          className="absolute right-0 top-0 flex h-12 w-12 items-center justify-center rounded-full bg-white text-3xl font-light text-ink shadow-xl transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pitch-100 sm:-right-14"
           aria-label="Close rating explanation"
         >
           ×
