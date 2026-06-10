@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type { LineupPlayer, PlayerRating, Team, TeamLineup } from "@/lib/types";
 import { RatingBadge } from "./RatingBadge";
 import { RatingExplanation } from "./RatingExplanation";
@@ -291,7 +292,8 @@ function RatingExplanationDialog({ rating, onClose }: { rating: PlayerRating; on
         </button>
         <RatingExplanation rating={rating} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
