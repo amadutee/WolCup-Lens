@@ -1,3 +1,4 @@
+import { isSampleMode } from "@/config/providerMode";
 import { getTeam } from "@/data/mockData";
 import { groupStageStandings, type GroupStanding } from "@/data/tournamentData";
 import { getWorldCupStandings } from "@/lib/worldCupFixtures";
@@ -19,23 +20,34 @@ export default async function StandingsPage() {
         </p>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        {groups.map(([group, standings]) => (
-          <GroupTable key={group} group={group} standings={standings} />
-        ))}
-      </div>
+      {groups.length > 0 ? (
+        <div className="grid gap-6 xl:grid-cols-3">
+          {groups.map(([group, standings]) => (
+            <GroupTable key={group} group={group} standings={standings} />
+          ))}
+        </div>
+      ) : (
+        <EmptyStandings />
+      )}
     </div>
   );
 }
 
 async function loadStandings() {
-  try {
-    const apiStandings = await getWorldCupStandings();
-    return Object.keys(apiStandings).length > 0 ? apiStandings : groupStageStandings;
-  } catch (error) {
-    console.warn("[StandingsPage] Falling back to sample standings.", error);
+  if (isSampleMode()) {
     return groupStageStandings;
   }
+
+  return getWorldCupStandings();
+}
+
+function EmptyStandings() {
+  return (
+    <section className="glass-card rounded-3xl p-6 text-center text-slate-300">
+      <h2 className="text-2xl font-black text-white">No World Cup standings available yet.</h2>
+      <p className="mt-2">API-Football did not return FIFA World Cup 2026 group tables. Check the server API key and try again later.</p>
+    </section>
+  );
 }
 
 function GroupTable({ group, standings }: { group: string; standings: GroupStanding[] }) {

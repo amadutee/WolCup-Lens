@@ -1,3 +1,4 @@
+import { isSampleMode } from "@/config/providerMode";
 import { getTeam } from "@/data/mockData";
 import { bracketRounds, type BracketMatch, type BracketTeamSlot } from "@/data/tournamentData";
 import { getWorldCupBracketRounds } from "@/lib/worldCupFixtures";
@@ -38,7 +39,7 @@ export default async function BracketPage() {
 
         <div className="overflow-x-auto pb-2">
           <div className="grid min-w-[64rem] gap-5 lg:grid-cols-3">
-            {rounds.map((round, roundIndex) => (
+            {rounds.length > 0 ? rounds.map((round, roundIndex) => (
               <div key={round.name} className="relative">
                 {roundIndex > 0 && <div className="absolute -left-5 top-1/2 hidden h-px w-5 bg-pitch-100/30 lg:block" />}
                 <div className="mb-4 rounded-2xl border border-white/10 bg-ink/50 px-4 py-3">
@@ -51,7 +52,12 @@ export default async function BracketPage() {
                   ))}
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="rounded-3xl border border-white/10 bg-ink/70 p-6 text-center text-slate-300 lg:col-span-3">
+                <h3 className="text-2xl font-black text-white">No knockout fixtures available yet.</h3>
+                <p className="mt-2">API-Football did not return FIFA World Cup 2026 knockout rounds. Check the server API key or wait for knockout fixtures to be published.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -60,13 +66,11 @@ export default async function BracketPage() {
 }
 
 async function loadBracketRounds() {
-  try {
-    const apiRounds = await getWorldCupBracketRounds();
-    return apiRounds.length > 0 ? apiRounds : bracketRounds;
-  } catch (error) {
-    console.warn("[BracketPage] Falling back to sample bracket.", error);
+  if (isSampleMode()) {
     return bracketRounds;
   }
+
+  return getWorldCupBracketRounds();
 }
 
 function BracketCard({ match }: { match: BracketMatch }) {

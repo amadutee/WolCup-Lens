@@ -45,9 +45,13 @@ export default async function Home() {
               </div>
               <span className="text-sm font-semibold text-pitch-100">{sectionMatches.length} matches</span>
             </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              {sectionMatches.map((match) => <MatchCard key={match.id} match={match} />)}
-            </div>
+            {sectionMatches.length > 0 ? (
+              <div className="grid gap-4 lg:grid-cols-2">
+                {sectionMatches.map((match) => <MatchCard key={match.id} match={match} />)}
+              </div>
+            ) : (
+              <div className="glass-card rounded-3xl p-5 text-sm text-slate-400">No {section.title.toLowerCase()} available right now.</div>
+            )}
           </section>
         );
       })}

@@ -1,8 +1,8 @@
+import { isSampleMode } from "@/config/providerMode";
 import { matches, teams } from "@/data/mockData";
 import {
   getWorldCupFixtureById,
   getWorldCupFixtures,
-  getWorldCupLiveFixtures,
   mapApiFootballTeamForDisplay,
 } from "@/lib/worldCupFixtures";
 import type {
@@ -45,14 +45,11 @@ export class MockFootballDataProvider implements FootballDataProvider {
 
 export class ApiFootballDataProvider implements FootballDataProvider {
   async getMatches() {
-    const [live, fixtures] = await Promise.all([
-      getWorldCupLiveFixtures(),
-      getWorldCupFixtures(),
-    ]);
+    const fixtures = await getWorldCupFixtures();
 
     return uniqueMatchesById(
-      [...live, ...fixtures].map((fixture) => mapApiFootballFixture(fixture)),
-    );
+      fixtures.map((fixture) => mapApiFootballFixture(fixture)),
+    ).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
   }
 
   async getMatch(id: string) {
@@ -302,14 +299,7 @@ function uniqueMatchesById(matches: Match[]) {
 }
 
 function shouldUseApiFootballDataProvider() {
-  const providerName = (
-    process.env.RATING_PROVIDER ??
-    process.env.NEXT_PUBLIC_RATING_PROVIDER ??
-    "sample"
-  )
-    .trim()
-    .toLowerCase();
-  return providerName === "api-football";
+  return !isSampleMode();
 }
 
 export const footballDataProvider: FootballDataProvider =
