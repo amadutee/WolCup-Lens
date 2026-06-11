@@ -3,6 +3,7 @@ import {
   getWorldCupFixtureById,
   getWorldCupFixtures,
   getWorldCupLiveFixtures,
+  mapApiFootballTeamForDisplay,
 } from "@/lib/worldCupFixtures";
 import type {
   ApiFootballEvent,
@@ -132,15 +133,7 @@ function mapApiFootballFixture(
 }
 
 function mapApiFootballTeam(team?: ApiFootballTeam): Team {
-  const name = team?.name ?? "TBD";
-  return {
-    id: String(team?.id ?? name),
-    name,
-    shortName: abbreviateTeamName(name),
-    flag: "🏳️",
-    fifaRank: 0,
-    group: "API",
-  };
+  return mapApiFootballTeamForDisplay(team);
 }
 
 function abbreviateTeamName(name: string) {

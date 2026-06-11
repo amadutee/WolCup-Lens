@@ -6,6 +6,7 @@ export type Team = {
   name: string;
   shortName: string;
   flag: string;
+  logo?: string;
   fifaRank: number;
   group: string;
 };

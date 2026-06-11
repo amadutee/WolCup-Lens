@@ -1,7 +1,8 @@
-import type { MatchStatus } from "@/lib/types";
+import type { MatchStatus, Team } from "@/lib/types";
 
 export type GroupStanding = {
   teamId: string;
+  team?: Team;
   played: number;
   wins: number;
   draws: number;
@@ -14,6 +15,7 @@ export type GroupStanding = {
 
 export type BracketTeamSlot = {
   teamId?: string;
+  team?: Team;
   seed: string;
   score?: number | null;
 };

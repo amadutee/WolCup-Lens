@@ -1,16 +1,21 @@
 import { getTeam } from "@/data/mockData";
 import { groupStageStandings, type GroupStanding } from "@/data/tournamentData";
+import { getWorldCupStandings } from "@/lib/worldCupFixtures";
+import type { Team } from "@/lib/types";
 
-export default function StandingsPage() {
-  const groups = Object.entries(groupStageStandings);
+export const dynamic = "force-dynamic";
+
+export default async function StandingsPage() {
+  const standings = await loadStandings();
+  const groups = Object.entries(standings);
 
   return (
     <div className="space-y-8">
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur lg:p-10">
         <p className="mb-3 text-sm font-bold uppercase tracking-[0.3em] text-pitch-100">Standings</p>
-        <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-5xl">Group-stage tables with qualification context.</h1>
+        <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-5xl">World Cup 2026 group tables from API-Football.</h1>
         <p className="mt-4 max-w-2xl text-slate-300">
-          Follow each group&apos;s points, goal difference, and recent form. The highlighted qualification zone feeds directly into the knockout bracket path.
+          Follow each group&apos;s points, goal difference, and recent form from the configured World Cup 2026 API feed. The highlighted qualification zone feeds directly into the knockout bracket path.
         </p>
       </section>
 
@@ -21,6 +26,16 @@ export default function StandingsPage() {
       </div>
     </div>
   );
+}
+
+async function loadStandings() {
+  try {
+    const apiStandings = await getWorldCupStandings();
+    return Object.keys(apiStandings).length > 0 ? apiStandings : groupStageStandings;
+  } catch (error) {
+    console.warn("[StandingsPage] Falling back to sample standings.", error);
+    return groupStageStandings;
+  }
 }
 
 function GroupTable({ group, standings }: { group: string; standings: GroupStanding[] }) {
@@ -70,7 +85,7 @@ function GroupTable({ group, standings }: { group: string; standings: GroupStand
 }
 
 function StandingRow({ standing, rank }: { standing: GroupStanding; rank: number }) {
-  const team = getTeam(standing.teamId);
+  const team = resolveStandingTeam(standing);
   const goalDifference = standing.goalsFor - standing.goalsAgainst;
   const qualifies = rank <= 2;
 
@@ -79,10 +94,10 @@ function StandingRow({ standing, rank }: { standing: GroupStanding; rank: number
       <td className="px-5 py-4">
         <div className="flex items-center gap-3">
           <span className={`grid h-7 w-7 place-items-center rounded-full text-xs font-black ${qualifies ? "bg-pitch-500 text-ink" : "bg-white/10 text-slate-400"}`}>{rank}</span>
-          <span className="text-2xl">{team.flag}</span>
+          <TeamMark team={team} />
           <div>
             <p className="font-bold text-white">{team.name}</p>
-            <p className="text-xs text-slate-500">FIFA rank #{team.fifaRank}</p>
+            <p className="text-xs text-slate-500">{team.fifaRank ? `FIFA rank #${team.fifaRank}` : team.shortName}</p>
           </div>
         </div>
       </td>
@@ -94,13 +109,29 @@ function StandingRow({ standing, rank }: { standing: GroupStanding; rank: number
       <td className="px-2 py-4 text-center text-lg font-black text-pitch-100">{standing.points}</td>
       <td className="px-5 py-4">
         <div className="flex gap-1">
-          {standing.form.map((result, index) => (
+          {standing.form.length > 0 ? standing.form.map((result, index) => (
             <span key={`${standing.teamId}-${result}-${index}`} className={`grid h-6 w-6 place-items-center rounded-full text-xs font-black ${formStyle[result]}`}>{result}</span>
-          ))}
+          )) : <span className="text-xs text-slate-500">No form</span>}
         </div>
       </td>
     </tr>
   );
+}
+
+function resolveStandingTeam(standing: GroupStanding): Team {
+  if (standing.team) {
+    return standing.team;
+  }
+
+  return getTeam(standing.teamId);
+}
+
+function TeamMark({ team }: { team: Team }) {
+  if (team.logo) {
+    return <span className="h-8 w-8 rounded-full bg-white/90 bg-contain bg-center bg-no-repeat p-1" style={{ backgroundImage: `url(${team.logo})` }} />;
+  }
+
+  return <span className="text-2xl">{team.flag}</span>;
 }
 
 const formStyle = {
