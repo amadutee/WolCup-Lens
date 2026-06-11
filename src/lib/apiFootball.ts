@@ -1,7 +1,9 @@
 import { WORLD_CUP_2026 } from "@/config/competitions";
 import type {
+  ApiFootballFixtureEntry,
   ApiFootballFixturesResponse,
   ApiFootballRoundsResponse,
+  ApiFootballStandingLeagueEntry,
   ApiFootballStandingsResponse,
 } from "@/lib/worldCupFixtures";
 
@@ -44,11 +46,18 @@ async function apiFootballGet<T>(path: string, params: URLSearchParams) {
 }
 
 export async function getWorldCupFixtures() {
-  return apiFootballGet<ApiFootballFixturesResponse>("/fixtures", worldCupParams());
+  const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", worldCupParams());
+  return filterWorldCupFixturesResponse(data);
+}
+
+export async function getWorldCupLiveFixtures() {
+  const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", worldCupParams({ live: "all" }));
+  return filterWorldCupFixturesResponse(data);
 }
 
 export async function getWorldCupStandings() {
-  return apiFootballGet<ApiFootballStandingsResponse>("/standings", worldCupParams());
+  const data = await apiFootballGet<ApiFootballStandingsResponse>("/standings", worldCupParams());
+  return filterWorldCupStandingsResponse(data);
 }
 
 export async function getWorldCupRounds() {
@@ -56,9 +65,43 @@ export async function getWorldCupRounds() {
 }
 
 export async function getWorldCupFixturesByRound(round: string) {
-  return apiFootballGet<ApiFootballFixturesResponse>("/fixtures", worldCupParams({ round }));
+  const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", worldCupParams({ round }));
+  return filterWorldCupFixturesResponse(data);
+}
+
+function filterWorldCupFixturesResponse(data: ApiFootballFixturesResponse): ApiFootballFixturesResponse {
+  return {
+    ...data,
+    response: (data.response ?? []).filter(isWorldCup2026Fixture),
+  };
+}
+
+function filterWorldCupStandingsResponse(data: ApiFootballStandingsResponse): ApiFootballStandingsResponse {
+  return {
+    ...data,
+    response: (data.response ?? []).filter(isWorldCup2026Standing),
+  };
+}
+
+function isWorldCup2026Fixture(item: ApiFootballFixtureEntry) {
+  return (
+    item.league?.id === WORLD_CUP_2026.apiFootballLeagueId &&
+    item.league?.season === WORLD_CUP_2026.season &&
+    item.league?.name?.toLowerCase().includes(WORLD_CUP_2026.name.toLowerCase()) === true
+  );
+}
+
+function isWorldCup2026Standing(item: ApiFootballStandingLeagueEntry) {
+  return (
+    item.league?.id === WORLD_CUP_2026.apiFootballLeagueId &&
+    item.league?.season === WORLD_CUP_2026.season
+  );
 }
 
 export const apiFootballInternals = {
+  filterWorldCupFixturesResponse,
+  filterWorldCupStandingsResponse,
+  isWorldCup2026Fixture,
+  isWorldCup2026Standing,
   worldCupParams,
 };

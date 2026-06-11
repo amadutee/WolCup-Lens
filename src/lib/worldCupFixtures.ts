@@ -174,7 +174,8 @@ export function filterWorldCupFixtures(fixtures: ApiFootballFixtureEntry[]) {
   return fixtures.filter(
     (fixture) =>
       fixture.league?.id === WORLD_CUP_2026.apiFootballLeagueId &&
-      fixture.league?.season === WORLD_CUP_2026.season,
+      fixture.league?.season === WORLD_CUP_2026.season &&
+      fixture.league?.name?.toLowerCase().includes(WORLD_CUP_2026.name.toLowerCase()) === true,
   );
 }
 
