@@ -1,3 +1,4 @@
+import { isSampleMode } from "@/config/providerMode";
 import type { PlayerRatingProvider } from "@/lib/types";
 import { ApiFootballRatingProvider } from "@/providers/ApiFootballRatingProvider";
 import { SampleRatingProvider } from "@/providers/SampleRatingProvider";
@@ -11,7 +12,7 @@ export type RatingProviderName = "sample" | "api-football" | "statsbomb-advanced
  * development. Prefer the server-only RATING_PROVIDER in deployments so the
  * provider can be changed at runtime without rebuilding public env bundles.
  */
-export function getRatingProvider(providerName = process.env.RATING_PROVIDER ?? process.env.NEXT_PUBLIC_RATING_PROVIDER): PlayerRatingProvider {
+export function getRatingProvider(providerName = getConfiguredRatingProviderName()): PlayerRatingProvider {
   switch (normalizeProviderName(providerName)) {
     case "api-football":
       return new ApiFootballRatingProvider();
@@ -23,6 +24,14 @@ export function getRatingProvider(providerName = process.env.RATING_PROVIDER ?? 
     default:
       return new SampleRatingProvider();
   }
+}
+
+function getConfiguredRatingProviderName() {
+  if (process.env.RATING_PROVIDER) {
+    return process.env.RATING_PROVIDER;
+  }
+
+  return isSampleMode() ? "sample" : process.env.NEXT_PUBLIC_RATING_PROVIDER;
 }
 
 function normalizeProviderName(providerName?: string): RatingProviderName | undefined {
