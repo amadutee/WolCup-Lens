@@ -4,9 +4,10 @@ import { ApiFootballRatingProvider, apiFootballInternals } from "../src/provider
 import { SampleRatingProvider } from "../src/providers/SampleRatingProvider";
 import { StatsBombAdvancedRatingProvider, type StatsBombEvent } from "../src/providers/StatsBombAdvancedRatingProvider";
 import { getRatingProvider } from "../src/config/ratingProvider";
+import { WORLD_CUP_2026 } from "../src/config/competitions";
 import { isSampleMode } from "../src/config/providerMode";
 import { ApiFootballDataProvider, MockFootballDataProvider, footballApiInternals } from "../src/lib/footballApi";
-import { getWorldCupFixtures as getRawWorldCupFixtures, getWorldCupFixturesByRound, getWorldCupRounds, getWorldCupStandings as getRawWorldCupStandings } from "../src/lib/apiFootball";
+import { getWorldCupFixtures as getRawWorldCupFixtures, getWorldCupFixturesByRound, getWorldCupLiveFixtures, getWorldCupRounds, getWorldCupStandings as getRawWorldCupStandings } from "../src/lib/apiFootball";
 import { getWorldCupBracketRounds, getWorldCupFixtures, getWorldCupStandings, isKnockoutRound, splitFixturesByStatus, worldCupFixturesInternals } from "../src/lib/worldCupFixtures";
 import type { PlayerMatchStats } from "../src/lib/types";
 
@@ -18,6 +19,14 @@ const basePlayer = (overrides: Partial<PlayerMatchStats> = {}): PlayerMatchStats
   position: "MID",
   minutesPlayed: 90,
   ...overrides,
+});
+
+
+test("World Cup config uses API-Football v3 league id and keeps v2 id as legacy metadata", () => {
+  assert.equal(WORLD_CUP_2026.apiFootballLeagueId, 1);
+  assert.equal(WORLD_CUP_2026.apiFootballV2LeagueId, 7902);
+  assert.equal(WORLD_CUP_2026.season, 2026);
+  assert.equal(WORLD_CUP_2026.name, "World Cup");
 });
 
 test("ApiFootballRatingProvider goals increase score", async () => {
@@ -139,6 +148,7 @@ test("getWorldCupFixtures calls API-Football with World Cup league and season", 
 
     assert.equal(requestedUrl.pathname, "/fixtures");
     assert.equal(requestedUrl.searchParams.get("league"), "1");
+    assert.notEqual(requestedUrl.searchParams.get("league"), "7902");
     assert.equal(requestedUrl.searchParams.get("season"), "2026");
     assert.equal(requestedUrl.searchParams.has("live"), false);
     assert.equal(fixtures.length, 1);
@@ -161,12 +171,15 @@ test("raw API helpers include league and season for all World Cup endpoints", as
     await getRawWorldCupStandings();
     await getWorldCupRounds();
     await getWorldCupFixturesByRound("Round of 16");
+    await getWorldCupLiveFixtures();
 
     const urls = fetchMock.requestedUrls.map((url) => new URL(url));
-    assert.deepEqual(urls.map((url) => url.pathname), ["/fixtures", "/standings", "/fixtures/rounds", "/fixtures"]);
+    assert.deepEqual(urls.map((url) => url.pathname), ["/fixtures", "/standings", "/fixtures/rounds", "/fixtures", "/fixtures"]);
     assert.ok(urls.every((url) => url.searchParams.get("league") === "1"));
+    assert.ok(urls.every((url) => url.searchParams.get("league") !== "7902"));
     assert.ok(urls.every((url) => url.searchParams.get("season") === "2026"));
     assert.equal(urls[3].searchParams.get("round"), "Round of 16");
+    assert.equal(urls[4].searchParams.get("live"), "all");
   } finally {
     fetchMock.restore();
     restoreEnv("API_FOOTBALL_API_KEY", originalApiKey);
@@ -182,6 +195,7 @@ test("World Cup fixture helper filters out non-World-Cup competitions", async ()
   const canadianPremierLeagueId = 186;
   const fetchMock = mockApiFootballFixtureFetch([
     worldCupFixture(1003),
+    { ...worldCupFixture(1005), league: { id: 1, name: "Club Friendly", season: 2026 } },
     canadianPremierLeagueFixture(2001, canadianPremierLeagueId),
     canadianPremierLeagueFixture(2002, 999),
   ]);
@@ -191,6 +205,7 @@ test("World Cup fixture helper filters out non-World-Cup competitions", async ()
 
     assert.deepEqual(fixtures.map((fixture) => fixture.fixture?.id), [1003]);
     assert.ok(fixtures.every((fixture) => fixture.league?.id === 1));
+    assert.ok(fixtures.every((fixture) => fixture.league?.name?.toLowerCase().includes("world cup")));
     assert.ok(fixtures.every((fixture) => fixture.league?.id !== canadianPremierLeagueId));
   } finally {
     fetchMock.restore();
@@ -262,6 +277,7 @@ test("World Cup standings helper calls standings endpoint and does not return sa
 
     assert.equal(requestedUrl.pathname, "/standings");
     assert.equal(requestedUrl.searchParams.get("league"), "1");
+    assert.notEqual(requestedUrl.searchParams.get("league"), "7902");
     assert.equal(requestedUrl.searchParams.get("season"), "2026");
     assert.deepEqual(standings, {});
   } finally {
@@ -292,6 +308,7 @@ test("bracket helper fetches rounds, excludes group stage, and fetches fixtures 
     assert.equal(urls[0].pathname, "/fixtures/rounds");
     assert.ok(urls.slice(1).every((url) => url.pathname === "/fixtures"));
     assert.ok(urls.every((url) => url.searchParams.get("league") === "1"));
+    assert.ok(urls.every((url) => url.searchParams.get("league") !== "7902"));
     assert.ok(urls.every((url) => url.searchParams.get("season") === "2026"));
     assert.deepEqual(urls.slice(1).map((url) => url.searchParams.get("round")), ["Round of 16", "Quarter-finals"]);
   } finally {
@@ -364,6 +381,9 @@ test("football data provider selection uses sample matches when configured", () 
     assert.equal(isSampleMode(), true);
     assert.equal(footballApiInternals.shouldUseApiFootballDataProvider(), false);
     process.env.NEXT_PUBLIC_RATING_PROVIDER = "api-football";
+    assert.equal(isSampleMode(), false);
+    assert.equal(footballApiInternals.shouldUseApiFootballDataProvider(), true);
+    process.env.NEXT_PUBLIC_RATING_PROVIDER = "statsbomb-advanced";
     assert.equal(isSampleMode(), false);
     assert.equal(footballApiInternals.shouldUseApiFootballDataProvider(), true);
   } finally {
