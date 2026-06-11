@@ -5,6 +5,7 @@ import { SampleRatingProvider } from "../src/providers/SampleRatingProvider";
 import { StatsBombAdvancedRatingProvider, type StatsBombEvent } from "../src/providers/StatsBombAdvancedRatingProvider";
 import { getRatingProvider } from "../src/config/ratingProvider";
 import { footballApiInternals } from "../src/lib/footballApi";
+import { getWorldCupFixtures, getWorldCupLiveFixtures } from "../src/lib/worldCupFixtures";
 import type { PlayerMatchStats } from "../src/lib/types";
 
 const basePlayer = (overrides: Partial<PlayerMatchStats> = {}): PlayerMatchStats => ({
@@ -121,6 +122,94 @@ test("ApiFootballDataProvider maps API fixtures to numeric match ids and dynamic
   assert.equal(match.homeTeam?.shortName, "ARG");
   assert.equal(match.awayTeam?.shortName, "FRA");
 });
+
+
+test("getWorldCupFixtures calls API-Football with World Cup league and season", async () => {
+  const originalApiKey = process.env.API_FOOTBALL_API_KEY;
+  const originalBaseUrl = process.env.API_FOOTBALL_BASE_URL;
+  process.env.API_FOOTBALL_API_KEY = "test-key";
+  process.env.API_FOOTBALL_BASE_URL = "https://api.example.test";
+  const fetchMock = mockApiFootballFixtureFetch([worldCupFixture(1001)]);
+
+  try {
+    const fixtures = await getWorldCupFixtures();
+    const requestedUrl = new URL(fetchMock.requestedUrls[0]);
+
+    assert.equal(requestedUrl.pathname, "/fixtures");
+    assert.equal(requestedUrl.searchParams.get("league"), "1");
+    assert.equal(requestedUrl.searchParams.get("season"), "2026");
+    assert.equal(requestedUrl.searchParams.has("live"), false);
+    assert.equal(fixtures.length, 1);
+  } finally {
+    fetchMock.restore();
+    restoreEnv("API_FOOTBALL_API_KEY", originalApiKey);
+    restoreEnv("API_FOOTBALL_BASE_URL", originalBaseUrl);
+  }
+});
+
+test("getWorldCupLiveFixtures calls API-Football with World Cup league, season, and live=all", async () => {
+  const originalApiKey = process.env.API_FOOTBALL_API_KEY;
+  const originalBaseUrl = process.env.API_FOOTBALL_BASE_URL;
+  process.env.API_FOOTBALL_API_KEY = "test-key";
+  process.env.API_FOOTBALL_BASE_URL = "https://api.example.test";
+  const fetchMock = mockApiFootballFixtureFetch([worldCupFixture(1002)]);
+
+  try {
+    const fixtures = await getWorldCupLiveFixtures();
+    const requestedUrl = new URL(fetchMock.requestedUrls[0]);
+
+    assert.equal(requestedUrl.pathname, "/fixtures");
+    assert.equal(requestedUrl.searchParams.get("league"), "1");
+    assert.equal(requestedUrl.searchParams.get("season"), "2026");
+    assert.equal(requestedUrl.searchParams.get("live"), "all");
+    assert.equal(fixtures.length, 1);
+  } finally {
+    fetchMock.restore();
+    restoreEnv("API_FOOTBALL_API_KEY", originalApiKey);
+    restoreEnv("API_FOOTBALL_BASE_URL", originalBaseUrl);
+  }
+});
+
+test("World Cup fixture helper filters out non-World-Cup competitions", async () => {
+  const originalApiKey = process.env.API_FOOTBALL_API_KEY;
+  const originalBaseUrl = process.env.API_FOOTBALL_BASE_URL;
+  process.env.API_FOOTBALL_API_KEY = "test-key";
+  process.env.API_FOOTBALL_BASE_URL = "https://api.example.test";
+  const canadianPremierLeagueId = 186;
+  const fetchMock = mockApiFootballFixtureFetch([
+    worldCupFixture(1003),
+    canadianPremierLeagueFixture(2001, canadianPremierLeagueId),
+    canadianPremierLeagueFixture(2002, 999),
+  ]);
+
+  try {
+    const fixtures = await getWorldCupFixtures();
+
+    assert.deepEqual(fixtures.map((fixture) => fixture.fixture?.id), [1003]);
+    assert.ok(fixtures.every((fixture) => fixture.league?.id === 1));
+    assert.ok(fixtures.every((fixture) => fixture.league?.id !== canadianPremierLeagueId));
+  } finally {
+    fetchMock.restore();
+    restoreEnv("API_FOOTBALL_API_KEY", originalApiKey);
+    restoreEnv("API_FOOTBALL_BASE_URL", originalBaseUrl);
+  }
+});
+
+function worldCupFixture(fixtureId: number) {
+  return {
+    fixture: { id: fixtureId },
+    league: { id: 1, name: "World Cup", season: 2026 },
+    teams: { home: { id: 50, name: "Argentina" }, away: { id: 49, name: "France" } },
+  };
+}
+
+function canadianPremierLeagueFixture(fixtureId: number, leagueId: number) {
+  return {
+    fixture: { id: fixtureId },
+    league: { id: leagueId, name: "Canadian Premier League", season: 2026 },
+    teams: { home: { id: 1, name: "Forge FC" }, away: { id: 2, name: "York United" } },
+  };
+}
 
 test("football data provider selection uses sample matches when configured", () => {
   const originalServerProvider = process.env.RATING_PROVIDER;
@@ -241,6 +330,23 @@ test("ApiFootballRatingProvider disables sample fallback in production by defaul
     restoreEnv("API_FOOTBALL_ALLOW_SAMPLE_FALLBACK", originalFallback);
   }
 });
+
+function mockApiFootballFixtureFetch(responseFixtures: unknown[]) {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    requestedUrls.push(String(input));
+    return new Response(JSON.stringify({ response: responseFixtures }), { status: 200 });
+  }) as typeof fetch;
+
+  return {
+    requestedUrls,
+    restore: () => {
+      globalThis.fetch = originalFetch;
+    },
+  };
+}
 
 function restoreEnv(key: string, value: string | undefined) {
   if (value === undefined) {
