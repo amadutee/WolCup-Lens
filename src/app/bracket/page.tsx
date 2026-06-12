@@ -1,7 +1,8 @@
+import { getActiveCompetition } from "@/config/competitions";
 import { isSampleMode } from "@/config/providerMode";
 import { getTeam } from "@/data/mockData";
 import { bracketRounds, type BracketMatch, type BracketTeamSlot } from "@/data/tournamentData";
-import { getWorldCupBracketRounds } from "@/lib/worldCupFixtures";
+import { getCompetitionBracketRounds } from "@/lib/worldCupFixtures";
 import type { Team } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -14,12 +15,13 @@ const statusLabel = {
 
 export default async function BracketPage() {
   const rounds = await loadBracketRounds();
+  const competition = getActiveCompetition();
 
   return (
     <div className="space-y-8">
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur lg:p-10">
         <p className="mb-3 text-sm font-bold uppercase tracking-[0.3em] text-pitch-100">Bracket</p>
-        <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-5xl">A live API-powered knockout path for World Cup 2026.</h1>
+        <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-5xl">A live API-powered knockout path for {competition.name} {competition.season}.</h1>
         <p className="mt-4 max-w-2xl text-slate-300">
           Winners move from left to right through the knockout rounds. API-Football fixtures fill scheduled, live, and completed knockout slots as they become available.
         </p>
@@ -29,7 +31,7 @@ export default async function BracketPage() {
         <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-end">
           <div>
             <h2 className="section-title">Knockout road</h2>
-            <p className="mt-1 text-slate-400">World Cup 2026 knockout fixtures grouped by API round.</p>
+            <p className="mt-1 text-slate-400">{competition.name} {competition.season} knockout fixtures grouped by API round.</p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide">
             <span className="rounded-full bg-pitch-500/15 px-3 py-1 text-pitch-100 ring-1 ring-pitch-100/30">Winner highlighted</span>
@@ -55,7 +57,7 @@ export default async function BracketPage() {
             )) : (
               <div className="rounded-3xl border border-white/10 bg-ink/70 p-6 text-center text-slate-300 lg:col-span-3">
                 <h3 className="text-2xl font-black text-white">No knockout fixtures available yet.</h3>
-                <p className="mt-2">API-Football did not return FIFA World Cup 2026 knockout rounds. Check the server API key or wait for knockout fixtures to be published.</p>
+                <p className="mt-2">{competition.hasKnockoutBracket ? "API-Football did not return knockout rounds for this competition yet." : `${competition.name} is a league competition, so no knockout bracket is available.`} Check the competition setting, server API key, and subscription access.</p>
               </div>
             )}
           </div>
@@ -70,7 +72,7 @@ async function loadBracketRounds() {
     return bracketRounds;
   }
 
-  return getWorldCupBracketRounds();
+  return getCompetitionBracketRounds();
 }
 
 function BracketCard({ match }: { match: BracketMatch }) {

@@ -1,8 +1,8 @@
 import { isSampleMode } from "@/config/providerMode";
 import { matches, teams } from "@/data/mockData";
 import {
-  getWorldCupFixtureById,
-  getWorldCupFixtures,
+  getCompetitionFixtureById,
+  getCompetitionFixtures,
   mapApiFootballTeamForDisplay,
 } from "@/lib/worldCupFixtures";
 import type {
@@ -45,7 +45,7 @@ export class MockFootballDataProvider implements FootballDataProvider {
 
 export class ApiFootballDataProvider implements FootballDataProvider {
   async getMatches() {
-    const fixtures = await getWorldCupFixtures();
+    const fixtures = await getCompetitionFixtures();
 
     return uniqueMatchesById(
       fixtures.map((fixture) => mapApiFootballFixture(fixture)),
@@ -58,7 +58,7 @@ export class ApiFootballDataProvider implements FootballDataProvider {
       return undefined;
     }
 
-    const fixture = await getWorldCupFixtureById(fixtureId);
+    const fixture = await getCompetitionFixtureById(fixtureId);
     return fixture ? mapApiFootballFixture(fixture, id) : undefined;
   }
 

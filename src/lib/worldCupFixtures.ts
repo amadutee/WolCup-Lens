@@ -1,5 +1,5 @@
-import { WORLD_CUP_2026 } from "@/config/competitions";
-import { getWorldCupFixtures as fetchApiWorldCupFixtures, getWorldCupFixturesByRound, getWorldCupRounds, getWorldCupStandings as fetchApiWorldCupStandings } from "@/lib/apiFootball";
+import { getActiveCompetition, WORLD_CUP_2026, type CompetitionConfig } from "@/config/competitions";
+import { getCompetitionFixtures as fetchApiCompetitionFixtures, getCompetitionFixturesByRound, getCompetitionRounds, getCompetitionStandings as fetchApiCompetitionStandings } from "@/lib/apiFootball";
 import type { BracketRound, BracketTeamSlot, GroupStanding } from "@/data/tournamentData";
 import type { MatchStatus, Team } from "@/lib/types";
 
@@ -123,60 +123,84 @@ export type ApiFootballLineupPlayer = {
 };
 
 // API-Football can return more than the requested competition in some response shapes.
-// Keep this defensive filter close to the mapping layer so every UI consumer receives only World Cup 2026 fixtures.
-export async function getWorldCupFixtures() {
+// Keep this defensive filter close to the mapping layer so every UI consumer receives only the configured competition.
+export async function getCompetitionFixtures(competition: CompetitionConfig = getActiveCompetition()) {
   try {
-    const data = await fetchApiWorldCupFixtures();
-    return sortFixturesByDate(filterWorldCupFixtures(data.response ?? []));
+    const data = await fetchApiCompetitionFixtures(competition);
+    return sortFixturesByDate(filterCompetitionFixtures(data.response ?? [], competition));
   } catch (error) {
-    console.error("[WorldCupFixtures] Unable to load API-Football World Cup fixtures.", error);
+    console.error(`[CompetitionFixtures] Unable to load API-Football ${competition.name} fixtures.`, error);
     return [];
   }
 }
 
-export async function getWorldCupFixtureById(fixtureId: string) {
-  const fixtures = await getWorldCupFixtures();
+export async function getCompetitionFixtureById(fixtureId: string, competition: CompetitionConfig = getActiveCompetition()) {
+  const fixtures = await getCompetitionFixtures(competition);
   return fixtures.find((fixture) => String(fixture.fixture?.id) === fixtureId);
 }
 
-export async function getWorldCupStandings() {
+export async function getCompetitionStandings(competition: CompetitionConfig = getActiveCompetition()) {
   try {
-    const data = await fetchApiWorldCupStandings();
-    return mapApiFootballStandings(data.response ?? []);
+    const data = await fetchApiCompetitionStandings(competition);
+    return mapApiFootballStandings(data.response ?? [], competition);
   } catch (error) {
-    console.error("[WorldCupFixtures] Unable to load API-Football World Cup standings.", error);
+    console.error(`[CompetitionFixtures] Unable to load API-Football ${competition.name} standings.`, error);
     return {};
   }
 }
 
-export async function getWorldCupBracketRounds() {
+export async function getCompetitionBracketRounds(competition: CompetitionConfig = getActiveCompetition()) {
+  if (!competition.hasKnockoutBracket) {
+    return [];
+  }
+
   try {
-    const roundsData = await getWorldCupRounds();
+    const roundsData = await getCompetitionRounds(competition);
     const knockoutRounds = (roundsData.response ?? []).filter(isKnockoutRound);
     const fixtureGroups = await Promise.all(
       knockoutRounds.map(async (roundName) => {
-        const fixturesData = await getWorldCupFixturesByRound(roundName);
+        const fixturesData = await getCompetitionFixturesByRound(roundName, competition);
         return {
           roundName,
-          fixtures: sortFixturesByDate(filterWorldCupFixtures(fixturesData.response ?? [])),
+          fixtures: sortFixturesByDate(filterCompetitionFixtures(fixturesData.response ?? [], competition)),
         };
       }),
     );
 
     return buildBracketRoundsFromRoundFixtures(fixtureGroups);
   } catch (error) {
-    console.error("[WorldCupFixtures] Unable to load API-Football World Cup bracket.", error);
+    console.error(`[CompetitionFixtures] Unable to load API-Football ${competition.name} bracket.`, error);
     return [];
   }
 }
 
-export function filterWorldCupFixtures(fixtures: ApiFootballFixtureEntry[]) {
+export function filterCompetitionFixtures(fixtures: ApiFootballFixtureEntry[], competition: CompetitionConfig = getActiveCompetition()) {
   return fixtures.filter(
     (fixture) =>
-      fixture.league?.id === WORLD_CUP_2026.apiFootballLeagueId &&
-      fixture.league?.season === WORLD_CUP_2026.season &&
-      fixture.league?.name?.toLowerCase().includes(WORLD_CUP_2026.name.toLowerCase()) === true,
+      fixture.league?.id === competition.apiFootballLeagueId &&
+      fixture.league?.season === competition.season &&
+      fixture.league?.name?.toLowerCase().includes(competition.name.toLowerCase()) === true,
   );
+}
+
+export async function getWorldCupFixtures() {
+  return getCompetitionFixtures(WORLD_CUP_2026);
+}
+
+export async function getWorldCupFixtureById(fixtureId: string) {
+  return getCompetitionFixtureById(fixtureId, WORLD_CUP_2026);
+}
+
+export async function getWorldCupStandings() {
+  return getCompetitionStandings(WORLD_CUP_2026);
+}
+
+export async function getWorldCupBracketRounds() {
+  return getCompetitionBracketRounds(WORLD_CUP_2026);
+}
+
+export function filterWorldCupFixtures(fixtures: ApiFootballFixtureEntry[]) {
+  return filterCompetitionFixtures(fixtures, WORLD_CUP_2026);
 }
 
 export function sortFixturesByDate(fixtures: ApiFootballFixtureEntry[]) {
@@ -204,14 +228,14 @@ export function mapApiFootballTeamForDisplay(team?: ApiFootballTeam): Team {
   };
 }
 
-export function mapApiFootballStandings(entries: ApiFootballStandingLeagueEntry[]) {
-  const worldCupEntry = entries.find(
+export function mapApiFootballStandings(entries: ApiFootballStandingLeagueEntry[], competition: CompetitionConfig = getActiveCompetition()) {
+  const competitionEntry = entries.find(
     (entry) =>
-      entry.league?.id === WORLD_CUP_2026.apiFootballLeagueId &&
-      entry.league?.season === WORLD_CUP_2026.season,
+      entry.league?.id === competition.apiFootballLeagueId &&
+      entry.league?.season === competition.season,
   );
 
-  return (worldCupEntry?.league?.standings ?? []).reduce<Record<string, GroupStanding[]>>(
+  return (competitionEntry?.league?.standings ?? []).reduce<Record<string, GroupStanding[]>>(
     (groups, table, tableIndex) => {
       for (const standing of table) {
         const group = normaliseGroupName(standing.group, tableIndex);
@@ -388,6 +412,7 @@ function abbreviateTeamName(name: string) {
 export const worldCupFixturesInternals = {
   buildBracketRoundsFromFixtures,
   buildBracketRoundsFromRoundFixtures,
+  filterCompetitionFixtures,
   filterWorldCupFixtures,
   isKnockoutRound,
   mapApiFootballStandings,
