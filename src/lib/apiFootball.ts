@@ -1,4 +1,4 @@
-import { WORLD_CUP_2026 } from "@/config/competitions";
+import { getActiveCompetition, WORLD_CUP_2026, type CompetitionConfig } from "@/config/competitions";
 import type {
   ApiFootballFixtureEntry,
   ApiFootballFixturesResponse,
@@ -13,18 +13,22 @@ function getApiFootballApiKey() {
   const apiKey = process.env.API_FOOTBALL_API_KEY;
 
   if (!apiKey) {
-    throw new Error("API_FOOTBALL_API_KEY is not configured for API-Football World Cup data.");
+    throw new Error("API_FOOTBALL_API_KEY is not configured for API-Football competition data.");
   }
 
   return apiKey;
 }
 
-function worldCupParams(extraParams: Record<string, string> = {}) {
+function competitionParams(competition: CompetitionConfig = getActiveCompetition(), extraParams: Record<string, string> = {}) {
   return new URLSearchParams({
-    league: String(WORLD_CUP_2026.apiFootballLeagueId),
-    season: String(WORLD_CUP_2026.season),
+    league: String(competition.apiFootballLeagueId),
+    season: String(competition.season),
     ...extraParams,
   });
+}
+
+function worldCupParams(extraParams: Record<string, string> = {}) {
+  return competitionParams(WORLD_CUP_2026, extraParams);
 }
 
 async function apiFootballGet<T>(path: string, params: URLSearchParams) {
@@ -45,62 +49,103 @@ async function apiFootballGet<T>(path: string, params: URLSearchParams) {
   return (await response.json()) as T;
 }
 
+export async function getCompetitionFixtures(competition: CompetitionConfig = getActiveCompetition()) {
+  const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", competitionParams(competition));
+  return filterCompetitionFixturesResponse(data, competition);
+}
+
+export async function getCompetitionLiveFixtures(competition: CompetitionConfig = getActiveCompetition()) {
+  const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", competitionParams(competition, { live: "all" }));
+  return filterCompetitionFixturesResponse(data, competition);
+}
+
+export async function getCompetitionStandings(competition: CompetitionConfig = getActiveCompetition()) {
+  const data = await apiFootballGet<ApiFootballStandingsResponse>("/standings", competitionParams(competition));
+  return filterCompetitionStandingsResponse(data, competition);
+}
+
+export async function getCompetitionRounds(competition: CompetitionConfig = getActiveCompetition()) {
+  return apiFootballGet<ApiFootballRoundsResponse>("/fixtures/rounds", competitionParams(competition));
+}
+
+export async function getCompetitionFixturesByRound(round: string, competition: CompetitionConfig = getActiveCompetition()) {
+  const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", competitionParams(competition, { round }));
+  return filterCompetitionFixturesResponse(data, competition);
+}
+
 export async function getWorldCupFixtures() {
-  const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", worldCupParams());
-  return filterWorldCupFixturesResponse(data);
+  return getCompetitionFixtures(WORLD_CUP_2026);
 }
 
 export async function getWorldCupLiveFixtures() {
-  const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", worldCupParams({ live: "all" }));
-  return filterWorldCupFixturesResponse(data);
+  return getCompetitionLiveFixtures(WORLD_CUP_2026);
 }
 
 export async function getWorldCupStandings() {
-  const data = await apiFootballGet<ApiFootballStandingsResponse>("/standings", worldCupParams());
-  return filterWorldCupStandingsResponse(data);
+  return getCompetitionStandings(WORLD_CUP_2026);
 }
 
 export async function getWorldCupRounds() {
-  return apiFootballGet<ApiFootballRoundsResponse>("/fixtures/rounds", worldCupParams());
+  return getCompetitionRounds(WORLD_CUP_2026);
 }
 
 export async function getWorldCupFixturesByRound(round: string) {
-  const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", worldCupParams({ round }));
-  return filterWorldCupFixturesResponse(data);
+  return getCompetitionFixturesByRound(round, WORLD_CUP_2026);
+}
+
+function filterCompetitionFixturesResponse(data: ApiFootballFixturesResponse, competition: CompetitionConfig): ApiFootballFixturesResponse {
+  return {
+    ...data,
+    response: (data.response ?? []).filter((item) => isCompetitionFixture(item, competition)),
+  };
+}
+
+function filterCompetitionStandingsResponse(data: ApiFootballStandingsResponse, competition: CompetitionConfig): ApiFootballStandingsResponse {
+  return {
+    ...data,
+    response: (data.response ?? []).filter((item) => isCompetitionStanding(item, competition)),
+  };
+}
+
+function isCompetitionFixture(item: ApiFootballFixtureEntry, competition: CompetitionConfig) {
+  return (
+    item.league?.id === competition.apiFootballLeagueId &&
+    item.league?.season === competition.season &&
+    item.league?.name?.toLowerCase().includes(competition.name.toLowerCase()) === true
+  );
+}
+
+function isCompetitionStanding(item: ApiFootballStandingLeagueEntry, competition: CompetitionConfig) {
+  return (
+    item.league?.id === competition.apiFootballLeagueId &&
+    item.league?.season === competition.season
+  );
 }
 
 function filterWorldCupFixturesResponse(data: ApiFootballFixturesResponse): ApiFootballFixturesResponse {
-  return {
-    ...data,
-    response: (data.response ?? []).filter(isWorldCup2026Fixture),
-  };
+  return filterCompetitionFixturesResponse(data, WORLD_CUP_2026);
 }
 
 function filterWorldCupStandingsResponse(data: ApiFootballStandingsResponse): ApiFootballStandingsResponse {
-  return {
-    ...data,
-    response: (data.response ?? []).filter(isWorldCup2026Standing),
-  };
+  return filterCompetitionStandingsResponse(data, WORLD_CUP_2026);
 }
 
 function isWorldCup2026Fixture(item: ApiFootballFixtureEntry) {
-  return (
-    item.league?.id === WORLD_CUP_2026.apiFootballLeagueId &&
-    item.league?.season === WORLD_CUP_2026.season &&
-    item.league?.name?.toLowerCase().includes(WORLD_CUP_2026.name.toLowerCase()) === true
-  );
+  return isCompetitionFixture(item, WORLD_CUP_2026);
 }
 
 function isWorldCup2026Standing(item: ApiFootballStandingLeagueEntry) {
-  return (
-    item.league?.id === WORLD_CUP_2026.apiFootballLeagueId &&
-    item.league?.season === WORLD_CUP_2026.season
-  );
+  return isCompetitionStanding(item, WORLD_CUP_2026);
 }
 
 export const apiFootballInternals = {
+  competitionParams,
+  filterCompetitionFixturesResponse,
+  filterCompetitionStandingsResponse,
   filterWorldCupFixturesResponse,
   filterWorldCupStandingsResponse,
+  isCompetitionFixture,
+  isCompetitionStanding,
   isWorldCup2026Fixture,
   isWorldCup2026Standing,
   worldCupParams,

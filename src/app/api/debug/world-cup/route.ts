@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
-import { WORLD_CUP_2026 } from "@/config/competitions";
-import { getWorldCupFixtures } from "@/lib/apiFootball";
+import { getActiveCompetition } from "@/config/competitions";
+import { getCompetitionFixtures } from "@/lib/apiFootball";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const fixturesUrl = `/fixtures?league=${WORLD_CUP_2026.apiFootballLeagueId}&season=${WORLD_CUP_2026.season}`;
-  const standingsUrl = `/standings?league=${WORLD_CUP_2026.apiFootballLeagueId}&season=${WORLD_CUP_2026.season}`;
-  const roundsUrl = `/fixtures/rounds?league=${WORLD_CUP_2026.apiFootballLeagueId}&season=${WORLD_CUP_2026.season}`;
+  const competition = getActiveCompetition();
+  const fixturesUrl = `/fixtures?league=${competition.apiFootballLeagueId}&season=${competition.season}`;
+  const standingsUrl = `/standings?league=${competition.apiFootballLeagueId}&season=${competition.season}`;
+  const roundsUrl = `/fixtures/rounds?league=${competition.apiFootballLeagueId}&season=${competition.season}`;
 
   try {
-    const fixtures = (await getWorldCupFixtures()).response ?? [];
+    const fixtures = (await getCompetitionFixtures(competition)).response ?? [];
 
     return NextResponse.json({
-      leagueId: WORLD_CUP_2026.apiFootballLeagueId,
-      season: WORLD_CUP_2026.season,
+      competition: competition.name,
+      leagueId: competition.apiFootballLeagueId,
+      season: competition.season,
       fixturesUrl,
       standingsUrl,
       roundsUrl,
@@ -25,15 +27,16 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       {
-        leagueId: WORLD_CUP_2026.apiFootballLeagueId,
-        season: WORLD_CUP_2026.season,
+        competition: competition.name,
+        leagueId: competition.apiFootballLeagueId,
+        season: competition.season,
         fixturesUrl,
         standingsUrl,
         roundsUrl,
         fixtureCount: 0,
         firstFixture: null,
         lastFixture: null,
-        error: error instanceof Error ? error.message : "Unable to load World Cup fixtures.",
+        error: error instanceof Error ? error.message : "Unable to load competition fixtures.",
       },
       { status: 500 },
     );

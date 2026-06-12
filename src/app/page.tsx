@@ -1,4 +1,5 @@
 import { MatchCard } from "@/components/MatchCard";
+import { getActiveCompetition } from "@/config/competitions";
 import { footballDataProvider } from "@/lib/footballApi";
 
 export const dynamic = "force-dynamic";
@@ -11,18 +12,19 @@ const sections = [
 
 export default async function Home() {
   const matches = await footballDataProvider.getMatches();
+  const competition = getActiveCompetition();
 
   return (
     <div className="space-y-10">
       <section className="grid gap-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur lg:grid-cols-[1.2fr_0.8fr] lg:p-10">
         <div>
-          <p className="mb-3 text-sm font-bold uppercase tracking-[0.3em] text-pitch-100">World Cup Lens</p>
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.3em] text-pitch-100">{competition.name} Lens</p>
           <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-6xl">See every match through transparent performance ratings.</h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">Track upcoming, live, and recent World Cup matches with explainable 0–10 player ratings designed around role-specific contributions.</p>
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">Track upcoming, live, and recent {competition.name} matches with explainable 0–10 player ratings designed around role-specific contributions.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
           {[
-            ["16", "Host cities"],
+            [String(competition.season), "Season"],
             ["0–10", "Player lens"],
             ["API", "Ready data layer"],
           ].map(([value, label]) => (

@@ -1,7 +1,8 @@
+import { getActiveCompetition } from "@/config/competitions";
 import { isSampleMode } from "@/config/providerMode";
 import { getTeam } from "@/data/mockData";
 import { groupStageStandings, type GroupStanding } from "@/data/tournamentData";
-import { getWorldCupStandings } from "@/lib/worldCupFixtures";
+import { getCompetitionStandings } from "@/lib/worldCupFixtures";
 import type { Team } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -9,21 +10,22 @@ export const dynamic = "force-dynamic";
 export default async function StandingsPage() {
   const standings = await loadStandings();
   const groups = Object.entries(standings);
+  const competition = getActiveCompetition();
 
   return (
     <div className="space-y-8">
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur lg:p-10">
         <p className="mb-3 text-sm font-bold uppercase tracking-[0.3em] text-pitch-100">Standings</p>
-        <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-5xl">World Cup 2026 group tables from API-Football.</h1>
+        <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-5xl">{competition.name} {competition.season} standings from API-Football.</h1>
         <p className="mt-4 max-w-2xl text-slate-300">
-          Follow each group&apos;s points, goal difference, and recent form from the configured World Cup 2026 API feed. The highlighted qualification zone feeds directly into the knockout bracket path.
+          Follow points, goal difference, and recent form from the configured {competition.name} {competition.season} API feed.
         </p>
       </section>
 
       {groups.length > 0 ? (
         <div className="grid gap-6 xl:grid-cols-3">
           {groups.map(([group, standings]) => (
-            <GroupTable key={group} group={group} standings={standings} />
+            <GroupTable key={group} group={group} standings={standings} competition={competition} />
           ))}
         </div>
       ) : (
@@ -38,19 +40,19 @@ async function loadStandings() {
     return groupStageStandings;
   }
 
-  return getWorldCupStandings();
+  return getCompetitionStandings();
 }
 
 function EmptyStandings() {
   return (
     <section className="glass-card rounded-3xl p-6 text-center text-slate-300">
-      <h2 className="text-2xl font-black text-white">No World Cup standings available yet.</h2>
-      <p className="mt-2">API-Football did not return FIFA World Cup 2026 group tables. Check the server API key and try again later.</p>
+      <h2 className="text-2xl font-black text-white">No competition standings available yet.</h2>
+      <p className="mt-2">API-Football did not return standings for the configured competition. Check the competition setting, server API key, and subscription access.</p>
     </section>
   );
 }
 
-function GroupTable({ group, standings }: { group: string; standings: GroupStanding[] }) {
+function GroupTable({ group, standings, competition }: { group: string; standings: GroupStanding[]; competition: ReturnType<typeof getActiveCompetition> }) {
   const sortedStandings = standings.slice().sort((a, b) => {
     const pointDiff = b.points - a.points;
     if (pointDiff !== 0) return pointDiff;
@@ -65,10 +67,10 @@ function GroupTable({ group, standings }: { group: string; standings: GroupStand
     <section className="glass-card overflow-hidden rounded-3xl">
       <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-5 py-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-pitch-100">Group {group}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-pitch-100">{competition.standingsGroupLabel} {group}</p>
           <h2 className="mt-1 text-2xl font-black text-white">Table</h2>
         </div>
-        <span className="rounded-full bg-pitch-500/15 px-3 py-1 text-xs font-bold text-pitch-100 ring-1 ring-pitch-100/30">Top 2 advance</span>
+        <span className="rounded-full bg-pitch-500/15 px-3 py-1 text-xs font-bold text-pitch-100 ring-1 ring-pitch-100/30">{competition.standingsAdvancementLabel}</span>
       </div>
 
       <div className="overflow-x-auto">

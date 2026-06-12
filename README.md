@@ -99,7 +99,19 @@ RATING_PROVIDER=api-football
 
 `NEXT_PUBLIC_RATING_PROVIDER=api-football` is still supported as a local-development fallback, but deployments should prefer `RATING_PROVIDER` because `NEXT_PUBLIC_*` variables can be inlined at build time by Next.js hosting providers.
 
-When the resolved rating provider is `api-football`, the Matches page also loads live and upcoming fixtures from API-Football so match route ids are numeric API fixture ids by default. If the resolved provider is `sample`, including a server-side `NEXT_PUBLIC_RATING_PROVIDER=sample` fallback, the Matches page uses the bundled sample matches. API-Football fixture discovery defaults to World Cup league `1`, season `2026`, and the next `10` fixtures; override those with `API_FOOTBALL_LEAGUE_ID`, `API_FOOTBALL_SEASON`, and `API_FOOTBALL_UPCOMING_COUNT`.
+When the resolved rating provider is `api-football`, the Matches page also loads live, upcoming, and recent fixtures from API-Football so match route ids are numeric API fixture ids by default. If the resolved provider is `sample`, including a server-side `NEXT_PUBLIC_RATING_PROVIDER=sample` fallback, the Matches page uses the bundled sample matches.
+
+API-Football fixture discovery is competition-driven. It defaults to the England Premier League 2024 season, which is available as league `39`, season `2024`, and is intended for API-Sports free subscriptions that do not include World Cup access. Switch competitions with the server-only variable below, or with the public variable for local development:
+
+```bash
+API_FOOTBALL_COMPETITION=PREMIER_LEAGUE_2024
+API_FOOTBALL_COMPETITION=WORLD_CUP_2026
+
+# Local/browser-exposed fallback also works:
+NEXT_PUBLIC_API_FOOTBALL_COMPETITION=world-cup
+```
+
+Supported competition keys are defined in `src/config/competitions.ts`. Aliases such as `premier-league`, `epl-2024`, and `world-cup` are accepted.
 
 If the app route id is not the numeric API-Football fixture id, map the local match id to the fixture id with a comma-separated list:
 

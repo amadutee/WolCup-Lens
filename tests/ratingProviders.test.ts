@@ -4,7 +4,7 @@ import { ApiFootballRatingProvider, apiFootballInternals } from "../src/provider
 import { SampleRatingProvider } from "../src/providers/SampleRatingProvider";
 import { StatsBombAdvancedRatingProvider, type StatsBombEvent } from "../src/providers/StatsBombAdvancedRatingProvider";
 import { getRatingProvider } from "../src/config/ratingProvider";
-import { WORLD_CUP_2026 } from "../src/config/competitions";
+import { getActiveCompetition, PREMIER_LEAGUE_2024, WORLD_CUP_2026 } from "../src/config/competitions";
 import { isSampleMode } from "../src/config/providerMode";
 import { ApiFootballDataProvider, MockFootballDataProvider, footballApiInternals } from "../src/lib/footballApi";
 import { getWorldCupFixtures as getRawWorldCupFixtures, getWorldCupFixturesByRound, getWorldCupLiveFixtures, getWorldCupRounds, getWorldCupStandings as getRawWorldCupStandings } from "../src/lib/apiFootball";
@@ -22,11 +22,30 @@ const basePlayer = (overrides: Partial<PlayerMatchStats> = {}): PlayerMatchStats
 });
 
 
-test("World Cup config uses API-Football v3 league id and keeps v2 id as legacy metadata", () => {
+test("competition config includes World Cup and Premier League API-Football metadata", () => {
   assert.equal(WORLD_CUP_2026.apiFootballLeagueId, 1);
   assert.equal(WORLD_CUP_2026.apiFootballV2LeagueId, 7902);
   assert.equal(WORLD_CUP_2026.season, 2026);
   assert.equal(WORLD_CUP_2026.name, "World Cup");
+  assert.equal(PREMIER_LEAGUE_2024.apiFootballLeagueId, 39);
+  assert.equal(PREMIER_LEAGUE_2024.season, 2024);
+  assert.equal(PREMIER_LEAGUE_2024.name, "Premier League");
+});
+
+test("active competition defaults to England Premier League 2024 and accepts aliases", () => {
+  const originalCompetition = process.env.API_FOOTBALL_COMPETITION;
+  const originalPublicCompetition = process.env.NEXT_PUBLIC_API_FOOTBALL_COMPETITION;
+  delete process.env.API_FOOTBALL_COMPETITION;
+  delete process.env.NEXT_PUBLIC_API_FOOTBALL_COMPETITION;
+
+  try {
+    assert.equal(getActiveCompetition().name, "Premier League");
+    process.env.API_FOOTBALL_COMPETITION = "world-cup";
+    assert.equal(getActiveCompetition().name, "World Cup");
+  } finally {
+    restoreEnv("API_FOOTBALL_COMPETITION", originalCompetition);
+    restoreEnv("NEXT_PUBLIC_API_FOOTBALL_COMPETITION", originalPublicCompetition);
+  }
 });
 
 test("ApiFootballRatingProvider goals increase score", async () => {
@@ -249,7 +268,7 @@ test("standings map API-Football response into UI shape", () => {
         ]],
       },
     },
-  ]);
+  ], WORLD_CUP_2026);
 
   assert.equal(standings.A[0].teamId, "50");
   assert.equal(standings.A[0].team?.name, "Argentina");
@@ -355,8 +374,10 @@ test("sample data provider returns sample matches and API provider returns API f
 
   const originalApiKey = process.env.API_FOOTBALL_API_KEY;
   const originalBaseUrl = process.env.API_FOOTBALL_BASE_URL;
+  const originalCompetition = process.env.API_FOOTBALL_COMPETITION;
   process.env.API_FOOTBALL_API_KEY = "test-key";
   process.env.API_FOOTBALL_BASE_URL = "https://api.example.test";
+  process.env.API_FOOTBALL_COMPETITION = "WORLD_CUP_2026";
   const fetchMock = mockApiFootballFixtureFetch([worldCupFixture(5555, "FT")]);
 
   try {
@@ -367,6 +388,7 @@ test("sample data provider returns sample matches and API provider returns API f
     fetchMock.restore();
     restoreEnv("API_FOOTBALL_API_KEY", originalApiKey);
     restoreEnv("API_FOOTBALL_BASE_URL", originalBaseUrl);
+    restoreEnv("API_FOOTBALL_COMPETITION", originalCompetition);
   }
 });
 
