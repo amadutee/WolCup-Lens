@@ -3,6 +3,7 @@ import { matches, teams } from "@/data/mockData";
 import {
   getCompetitionFixtureById,
   getCompetitionFixtures,
+  getCompetitionLineupsByFixtureId,
   mapApiFootballTeamForDisplay,
 } from "@/lib/worldCupFixtures";
 import type {
@@ -26,6 +27,7 @@ import type {
 export interface FootballDataProvider {
   getMatches(): Promise<Match[]>;
   getMatch(id: string): Promise<Match | undefined>;
+  getTeamMatches(teamId: string): Promise<Match[]>;
   getTeams(): Promise<Team[]>;
 }
 
@@ -36,6 +38,12 @@ export class MockFootballDataProvider implements FootballDataProvider {
 
   async getMatch(id: string) {
     return matches.find((match) => match.id === id);
+  }
+
+  async getTeamMatches(teamId: string) {
+    return matches
+      .filter((match) => match.homeTeamId === teamId || match.awayTeamId === teamId)
+      .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff));
   }
 
   async getTeams() {
@@ -58,8 +66,24 @@ export class ApiFootballDataProvider implements FootballDataProvider {
       return undefined;
     }
 
-    const fixture = await getCompetitionFixtureById(fixtureId);
-    return fixture ? mapApiFootballFixture(fixture, id) : undefined;
+    const [fixture, lineups] = await Promise.all([
+      getCompetitionFixtureById(fixtureId),
+      getCompetitionLineupsByFixtureId(fixtureId),
+    ]);
+
+    if (!fixture) {
+      return undefined;
+    }
+
+    return mapApiFootballFixture({
+      ...fixture,
+      lineups: lineups.length > 0 ? lineups : fixture.lineups,
+    }, id);
+  }
+
+  async getTeamMatches(teamId: string) {
+    const matches = await this.getMatches();
+    return matches.filter((match) => match.homeTeamId === teamId || match.awayTeamId === teamId);
   }
 
   async getTeams() {

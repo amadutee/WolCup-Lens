@@ -1,5 +1,5 @@
 import { getActiveCompetition, WORLD_CUP_2026, type CompetitionConfig } from "@/config/competitions";
-import { getCompetitionFixtures as fetchApiCompetitionFixtures, getCompetitionFixturesByRound, getCompetitionRounds, getCompetitionStandings as fetchApiCompetitionStandings } from "@/lib/apiFootball";
+import { getCompetitionFixtureById as fetchApiCompetitionFixtureById, getCompetitionFixtureLineups, getCompetitionFixtures as fetchApiCompetitionFixtures, getCompetitionFixturesByRound, getCompetitionRounds, getCompetitionStandings as fetchApiCompetitionStandings } from "@/lib/apiFootball";
 import type { BracketRound, BracketTeamSlot, GroupStanding } from "@/data/tournamentData";
 import type { MatchStatus, Team } from "@/lib/types";
 
@@ -13,6 +13,10 @@ export type ApiFootballStandingsResponse = {
 
 export type ApiFootballRoundsResponse = {
   response?: string[];
+};
+
+export type ApiFootballLineupsResponse = {
+  response?: ApiFootballLineup[];
 };
 
 export type ApiFootballStandingLeagueEntry = {
@@ -135,8 +139,28 @@ export async function getCompetitionFixtures(competition: CompetitionConfig = ge
 }
 
 export async function getCompetitionFixtureById(fixtureId: string, competition: CompetitionConfig = getActiveCompetition()) {
+  try {
+    const data = await fetchApiCompetitionFixtureById(fixtureId, competition);
+    const fixture = filterCompetitionFixtures(data.response ?? [], competition).find((item) => String(item.fixture?.id) === fixtureId);
+    if (fixture) {
+      return fixture;
+    }
+  } catch (error) {
+    console.error(`[CompetitionFixtures] Unable to load API-Football ${competition.name} fixture ${fixtureId}.`, error);
+  }
+
   const fixtures = await getCompetitionFixtures(competition);
   return fixtures.find((fixture) => String(fixture.fixture?.id) === fixtureId);
+}
+
+export async function getCompetitionLineupsByFixtureId(fixtureId: string, competition: CompetitionConfig = getActiveCompetition()) {
+  try {
+    const data = await getCompetitionFixtureLineups(fixtureId);
+    return data.response ?? [];
+  } catch (error) {
+    console.error(`[CompetitionFixtures] Unable to load API-Football ${competition.name} lineups for fixture ${fixtureId}.`, error);
+    return [];
+  }
 }
 
 export async function getCompetitionStandings(competition: CompetitionConfig = getActiveCompetition()) {
@@ -189,6 +213,10 @@ export async function getWorldCupFixtures() {
 
 export async function getWorldCupFixtureById(fixtureId: string) {
   return getCompetitionFixtureById(fixtureId, WORLD_CUP_2026);
+}
+
+export async function getWorldCupLineupsByFixtureId(fixtureId: string) {
+  return getCompetitionLineupsByFixtureId(fixtureId, WORLD_CUP_2026);
 }
 
 export async function getWorldCupStandings() {
