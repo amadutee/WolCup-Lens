@@ -1,9 +1,11 @@
 import { getActiveCompetition, WORLD_CUP_2026, type CompetitionConfig } from "@/config/competitions";
 import type {
   ApiFootballFixtureEntry,
+  ApiFootballEventsResponse,
   ApiFootballFixturesResponse,
   ApiFootballLineupsResponse,
   ApiFootballRoundsResponse,
+  ApiFootballTeamStatisticsResponse,
   ApiFootballStandingLeagueEntry,
   ApiFootballStandingsResponse,
 } from "@/lib/worldCupFixtures";
@@ -64,6 +66,14 @@ export async function getCompetitionFixtureLineups(fixtureId: string) {
   return apiFootballGet<ApiFootballLineupsResponse>("/fixtures/lineups", new URLSearchParams({ fixture: fixtureId }));
 }
 
+export async function getCompetitionFixtureEvents(fixtureId: string) {
+  return apiFootballGet<ApiFootballEventsResponse>("/fixtures/events", new URLSearchParams({ fixture: fixtureId }));
+}
+
+export async function getCompetitionFixtureStatistics(fixtureId: string) {
+  return apiFootballGet<ApiFootballTeamStatisticsResponse>("/fixtures/statistics", new URLSearchParams({ fixture: fixtureId }));
+}
+
 export async function getCompetitionLiveFixtures(competition: CompetitionConfig = getActiveCompetition()) {
   const data = await apiFootballGet<ApiFootballFixturesResponse>("/fixtures", competitionParams(competition, { live: "all" }));
   return filterCompetitionFixturesResponse(data, competition);
@@ -97,6 +107,14 @@ export async function getWorldCupFixtureById(fixtureId: string) {
 
 export async function getWorldCupFixtureLineups(fixtureId: string) {
   return getCompetitionFixtureLineups(fixtureId);
+}
+
+export async function getWorldCupFixtureEvents(fixtureId: string) {
+  return getCompetitionFixtureEvents(fixtureId);
+}
+
+export async function getWorldCupFixtureStatistics(fixtureId: string) {
+  return getCompetitionFixtureStatistics(fixtureId);
 }
 
 export async function getWorldCupStandings() {

@@ -1,9 +1,11 @@
 import { isSampleMode } from "@/config/providerMode";
 import { matches, teams } from "@/data/mockData";
 import {
+  getCompetitionEventsByFixtureId,
   getCompetitionFixtureById,
   getCompetitionFixtures,
   getCompetitionLineupsByFixtureId,
+  getCompetitionStatisticsByFixtureId,
   mapApiFootballTeamForDisplay,
 } from "@/lib/worldCupFixtures";
 import type {
@@ -66,9 +68,11 @@ export class ApiFootballDataProvider implements FootballDataProvider {
       return undefined;
     }
 
-    const [fixture, lineups] = await Promise.all([
+    const [fixture, lineups, events, statistics] = await Promise.all([
       getCompetitionFixtureById(fixtureId),
       getCompetitionLineupsByFixtureId(fixtureId),
+      getCompetitionEventsByFixtureId(fixtureId),
+      getCompetitionStatisticsByFixtureId(fixtureId),
     ]);
 
     if (!fixture) {
@@ -77,6 +81,8 @@ export class ApiFootballDataProvider implements FootballDataProvider {
 
     return mapApiFootballFixture({
       ...fixture,
+      events: events.length > 0 ? events : fixture.events,
+      statistics: statistics.length > 0 ? statistics : fixture.statistics,
       lineups: lineups.length > 0 ? lineups : fixture.lineups,
     }, id);
   }

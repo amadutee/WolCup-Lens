@@ -7,7 +7,7 @@ import { getRatingProvider } from "../src/config/ratingProvider";
 import { getActiveCompetition, PREMIER_LEAGUE_2024, WORLD_CUP_2026 } from "../src/config/competitions";
 import { isSampleMode } from "../src/config/providerMode";
 import { ApiFootballDataProvider, MockFootballDataProvider, footballApiInternals } from "../src/lib/footballApi";
-import { getWorldCupFixtureById as getRawWorldCupFixtureById, getWorldCupFixtureLineups as getRawWorldCupFixtureLineups, getWorldCupFixtures as getRawWorldCupFixtures, getWorldCupFixturesByRound, getWorldCupLiveFixtures, getWorldCupRounds, getWorldCupStandings as getRawWorldCupStandings } from "../src/lib/apiFootball";
+import { getWorldCupFixtureById as getRawWorldCupFixtureById, getWorldCupFixtureEvents as getRawWorldCupFixtureEvents, getWorldCupFixtureLineups as getRawWorldCupFixtureLineups, getWorldCupFixtureStatistics as getRawWorldCupFixtureStatistics, getWorldCupFixtures as getRawWorldCupFixtures, getWorldCupFixturesByRound, getWorldCupLiveFixtures, getWorldCupRounds, getWorldCupStandings as getRawWorldCupStandings } from "../src/lib/apiFootball";
 import { getWorldCupBracketRounds, getWorldCupFixtures, getWorldCupStandings, isKnockoutRound, splitFixturesByStatus, worldCupFixturesInternals } from "../src/lib/worldCupFixtures";
 import type { PlayerMatchStats } from "../src/lib/types";
 
@@ -208,9 +208,11 @@ test("raw API helpers include league and season for all World Cup endpoints", as
     await getWorldCupLiveFixtures();
     await getRawWorldCupFixtureById("1001");
     await getRawWorldCupFixtureLineups("1001");
+    await getRawWorldCupFixtureEvents("1001");
+    await getRawWorldCupFixtureStatistics("1001");
 
     const urls = fetchMock.requestedUrls.map((url) => new URL(url));
-    assert.deepEqual(urls.map((url) => url.pathname), ["/fixtures", "/standings", "/fixtures/rounds", "/fixtures", "/fixtures", "/fixtures", "/fixtures/lineups"]);
+    assert.deepEqual(urls.map((url) => url.pathname), ["/fixtures", "/standings", "/fixtures/rounds", "/fixtures", "/fixtures", "/fixtures", "/fixtures/lineups", "/fixtures/events", "/fixtures/statistics"]);
     assert.ok(urls.slice(0, 6).every((url) => url.searchParams.get("league") === "1"));
     assert.ok(urls.every((url) => url.searchParams.get("league") !== "7902"));
     assert.ok(urls.slice(0, 6).every((url) => url.searchParams.get("season") === "2026"));
@@ -218,6 +220,8 @@ test("raw API helpers include league and season for all World Cup endpoints", as
     assert.equal(urls[4].searchParams.get("live"), "all");
     assert.equal(urls[5].searchParams.get("id"), "1001");
     assert.equal(urls[6].searchParams.get("fixture"), "1001");
+    assert.equal(urls[7].searchParams.get("fixture"), "1001");
+    assert.equal(urls[8].searchParams.get("fixture"), "1001");
   } finally {
     fetchMock.restore();
     restoreEnv("API_FOOTBALL_API_KEY", originalApiKey);
@@ -386,6 +390,89 @@ function canadianPremierLeagueFixture(fixtureId: number, leagueId: number) {
     teams: { home: { id: 1, name: "Forge FC" }, away: { id: 2, name: "York United" } },
   };
 }
+
+
+test("ApiFootballDataProvider pulls selected fixture timeline and team stats from fixture APIs", async () => {
+  const originalApiKey = process.env.API_FOOTBALL_API_KEY;
+  const originalBaseUrl = process.env.API_FOOTBALL_BASE_URL;
+  const originalCompetition = process.env.API_FOOTBALL_COMPETITION;
+  process.env.API_FOOTBALL_API_KEY = "test-key";
+  process.env.API_FOOTBALL_BASE_URL = "https://api.example.test";
+  process.env.API_FOOTBALL_COMPETITION = "WORLD_CUP_2026";
+  const fetchMock = mockApiFootballFetch((url) => {
+    if (url.pathname === "/fixtures/events") {
+      return {
+        response: [
+          {
+            time: { elapsed: 12, extra: 1 },
+            team: { id: 50, name: "Argentina" },
+            player: { name: "Scorer" },
+            type: "Goal",
+            detail: "Normal Goal",
+          },
+        ],
+      };
+    }
+
+    if (url.pathname === "/fixtures/statistics") {
+      return {
+        response: [
+          {
+            team: { id: 50, name: "Argentina" },
+            statistics: [
+              { type: "Ball Possession", value: "61%" },
+              { type: "Total Shots", value: 14 },
+              { type: "Shots on Goal", value: 6 },
+              { type: "expected_goals", value: "1.7" },
+              { type: "Corner Kicks", value: 5 },
+              { type: "Fouls", value: 9 },
+              { type: "Total passes", value: 540 },
+              { type: "Passes %", value: "88%" },
+            ],
+          },
+        ],
+      };
+    }
+
+    if (url.pathname === "/fixtures/lineups") {
+      return { response: [] };
+    }
+
+    return { response: [worldCupFixture(7777, "FT")] };
+  });
+
+  try {
+    const match = await new ApiFootballDataProvider().getMatch("7777");
+    const urls = fetchMock.requestedUrls.map((url) => new URL(url));
+
+    assert.ok(match);
+    assert.deepEqual(urls.map((url) => url.pathname), ["/fixtures", "/fixtures/lineups", "/fixtures/events", "/fixtures/statistics"]);
+    assert.equal(match.timeline.length, 1);
+    assert.deepEqual(match.timeline[0], {
+      minute: 12,
+      stoppage: 1,
+      type: "goal",
+      teamId: "50",
+      player: "Scorer",
+      detail: "Normal Goal",
+    });
+    assert.deepEqual(match.teamStats["50"], {
+      possession: 61,
+      shots: 14,
+      shotsOnTarget: 6,
+      expectedGoals: 1.7,
+      corners: 5,
+      fouls: 9,
+      passes: 540,
+      passCompletion: 88,
+    });
+  } finally {
+    fetchMock.restore();
+    restoreEnv("API_FOOTBALL_API_KEY", originalApiKey);
+    restoreEnv("API_FOOTBALL_BASE_URL", originalBaseUrl);
+    restoreEnv("API_FOOTBALL_COMPETITION", originalCompetition);
+  }
+});
 
 test("sample data provider returns sample matches and API provider returns API fixtures", async () => {
   const sampleMatches = await new MockFootballDataProvider().getMatches();
