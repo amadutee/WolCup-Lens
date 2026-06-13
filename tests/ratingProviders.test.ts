@@ -7,7 +7,7 @@ import { getRatingProvider } from "../src/config/ratingProvider";
 import { getActiveCompetition, PREMIER_LEAGUE_2024, WORLD_CUP_2026 } from "../src/config/competitions";
 import { isSampleMode } from "../src/config/providerMode";
 import { ApiFootballDataProvider, MockFootballDataProvider, footballApiInternals } from "../src/lib/footballApi";
-import { getWorldCupFixtures as getRawWorldCupFixtures, getWorldCupFixturesByRound, getWorldCupLiveFixtures, getWorldCupRounds, getWorldCupStandings as getRawWorldCupStandings } from "../src/lib/apiFootball";
+import { getWorldCupFixtureById as getRawWorldCupFixtureById, getWorldCupFixtureLineups as getRawWorldCupFixtureLineups, getWorldCupFixtures as getRawWorldCupFixtures, getWorldCupFixturesByRound, getWorldCupLiveFixtures, getWorldCupRounds, getWorldCupStandings as getRawWorldCupStandings } from "../src/lib/apiFootball";
 import { getWorldCupBracketRounds, getWorldCupFixtures, getWorldCupStandings, isKnockoutRound, splitFixturesByStatus, worldCupFixturesInternals } from "../src/lib/worldCupFixtures";
 import type { PlayerMatchStats } from "../src/lib/types";
 
@@ -143,6 +143,15 @@ test("ApiFootballDataProvider maps API fixtures to numeric match ids and dynamic
     league: { name: "World Cup", round: "Group Stage" },
     teams: { home: { id: 50, name: "Argentina" }, away: { id: 49, name: "France" } },
     goals: { home: null, away: null },
+    lineups: [
+      {
+        team: { id: 50, name: "Argentina" },
+        formation: "4-3-3",
+        coach: { name: "Test Coach" },
+        startXI: [{ player: { id: 10, name: "Starter", number: 10, pos: "F" } }],
+        substitutes: [{ player: { id: 20, name: "Sub", number: 20, pos: "M" } }],
+      },
+    ],
   });
 
   assert.equal(match.id, "12345");
@@ -151,6 +160,12 @@ test("ApiFootballDataProvider maps API fixtures to numeric match ids and dynamic
   assert.equal(match.awayTeamId, "49");
   assert.equal(match.homeTeam?.shortName, "ARG");
   assert.equal(match.awayTeam?.shortName, "FRA");
+  assert.deepEqual(match.lineups["50"], {
+    formation: "4-3-3",
+    manager: "Test Coach",
+    starters: [{ playerId: "10", name: "Starter", shirtNumber: 10, position: "FWD" }],
+    substitutes: [{ playerId: "20", name: "Sub", shirtNumber: 20, position: "MID" }],
+  });
 });
 
 
@@ -191,14 +206,18 @@ test("raw API helpers include league and season for all World Cup endpoints", as
     await getWorldCupRounds();
     await getWorldCupFixturesByRound("Round of 16");
     await getWorldCupLiveFixtures();
+    await getRawWorldCupFixtureById("1001");
+    await getRawWorldCupFixtureLineups("1001");
 
     const urls = fetchMock.requestedUrls.map((url) => new URL(url));
-    assert.deepEqual(urls.map((url) => url.pathname), ["/fixtures", "/standings", "/fixtures/rounds", "/fixtures", "/fixtures"]);
-    assert.ok(urls.every((url) => url.searchParams.get("league") === "1"));
+    assert.deepEqual(urls.map((url) => url.pathname), ["/fixtures", "/standings", "/fixtures/rounds", "/fixtures", "/fixtures", "/fixtures", "/fixtures/lineups"]);
+    assert.ok(urls.slice(0, 6).every((url) => url.searchParams.get("league") === "1"));
     assert.ok(urls.every((url) => url.searchParams.get("league") !== "7902"));
-    assert.ok(urls.every((url) => url.searchParams.get("season") === "2026"));
+    assert.ok(urls.slice(0, 6).every((url) => url.searchParams.get("season") === "2026"));
     assert.equal(urls[3].searchParams.get("round"), "Round of 16");
     assert.equal(urls[4].searchParams.get("live"), "all");
+    assert.equal(urls[5].searchParams.get("id"), "1001");
+    assert.equal(urls[6].searchParams.get("fixture"), "1001");
   } finally {
     fetchMock.restore();
     restoreEnv("API_FOOTBALL_API_KEY", originalApiKey);

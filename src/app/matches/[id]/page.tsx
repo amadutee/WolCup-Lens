@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RatingBadge } from "@/components/RatingBadge";
 import { MatchLineups } from "@/components/MatchLineups";
@@ -34,9 +35,9 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
           </span>
         </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-3xl bg-ink/50 p-5 text-center">
-          <TeamScore flag={home.flag} name={home.name} score={match.homeScore} />
+          <TeamScore teamId={home.id} flag={home.flag} name={home.name} score={match.homeScore} />
           <span className="text-3xl font-black text-slate-500">:</span>
-          <TeamScore flag={away.flag} name={away.name} score={match.awayScore} />
+          <TeamScore teamId={away.id} flag={away.flag} name={away.name} score={match.awayScore} />
         </div>
       </section>
 
@@ -92,13 +93,18 @@ export default async function MatchDetail({ params }: { params: Promise<{ id: st
   );
 }
 
-function TeamScore({ flag, name, score }: { flag: string; name: string; score: number | null }) {
+function TeamScore({ teamId, flag, name, score }: { teamId: string; flag: string; name: string; score: number | null }) {
   return (
-    <div>
+    <Link
+      href={`/teams/${teamId}`}
+      className="group rounded-3xl p-3 transition hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-pitch-100"
+      aria-label={`Open ${name} team overview`}
+    >
       <p className="text-4xl">{flag}</p>
-      <p className="mt-2 text-sm font-bold uppercase tracking-wide text-slate-300">{name}</p>
+      <p className="mt-2 text-sm font-bold uppercase tracking-wide text-slate-300 transition group-hover:text-pitch-100">{name}</p>
       <p className="mt-2 text-5xl font-black text-white">{score ?? "–"}</p>
-    </div>
+      <p className="mt-2 text-xs font-bold uppercase tracking-wide text-pitch-100 opacity-0 transition group-hover:opacity-100 group-focus:opacity-100">View fixtures</p>
+    </Link>
   );
 }
 
