@@ -70,6 +70,7 @@ function TeamMark({ team }: { team: Team }) {
         width={80}
         height={80}
         className="h-20 w-20 rounded-3xl bg-white object-contain p-3 shadow-xl"
+        unoptimized
       />
     );
   }
